@@ -7,14 +7,14 @@ from PIL import Image, ImageDraw, ImageFont
 # general
 IMAGE_SIZE = (80, 34)
 UPSCALE_MULTIPLIER = 1
-DOWNSCALE_MULTIPLIER = 2
+DOWNSCALE_MULTIPLIER = 1
 IMAGE_MODE = 'RGB'
 
 # text
 TEXT_COLOR = 0xFFFFFFFF
 TEXT_LENGTH = 5
-TEXT_SIZE = 24
-TEXT_FONT = ImageFont.truetype('arial.ttf', size=int(TEXT_SIZE * UPSCALE_MULTIPLIER))
+TEXT_SIZE = 32
+TEXT_FONT = ImageFont.truetype('fs-tahoma-8px.ttf', size=int(TEXT_SIZE * UPSCALE_MULTIPLIER))
 POSSIBLE_LETTERS = string.ascii_uppercase + string.digits
 
 # background

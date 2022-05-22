@@ -4,7 +4,7 @@ import time
 from internals.game import Game
 from managers.loop_manager import Manager
 from internals.fish import Fish
-1
+
 INPUT_KWARGS = {
     'send_to_process'      : False,
     'focus'                : True,

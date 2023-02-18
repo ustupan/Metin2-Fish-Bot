@@ -15,13 +15,13 @@ from managers.loop_manager import Manager
 
 
 class Process:
-    def __init__(self, process_id: int, process_name: str, window_name: str, base_address):
+    def __init__(self, process_id: int, process_name: str, window_name: str, base_address, hwnd: int):
         self.process_id = process_id
         self.process_name = process_name
 
         self.base_address = base_address
         self.window_name = window_name
-
+        self.hwnd = hwnd
         self.__last_window_handle = None
         self.__last_window_thread_id = None
 
@@ -35,6 +35,8 @@ class Process:
     @functools.cached_property
     def window_handle(self):
         """To focus, and send inputs"""
+        if self.hwnd is not None:
+            return self.hwnd
         return win32gui.FindWindow(None, self.window_name)
 
     @functools.cached_property
@@ -170,13 +172,12 @@ class Process:
 
                 if 'ctrl' in _keys:
                     vk = 0x200 | vk
-
                 win32api.SendMessage(self.window_handle, win32con.WM_KEYDOWN, vk,
                                      self._prepare_lparam(win32con.WM_KEYDOWN, vk))
                 time.sleep(sleep_between_presses)
                 win32api.PostMessage(self.window_handle, win32con.WM_KEYUP, vk,
                                      self._prepare_lparam(win32con.WM_KEYUP, vk))
-
+                self.focus_back_to_last_window()
             time.sleep(sleep_between_keys)
 
         if focus_back is True:
@@ -225,6 +226,41 @@ class Process:
                     win32api.CloseHandle(handle)
 
         raise Exception(f"{process_name} could not be found.")
+
+    @staticmethod
+    def get_window_by_pid(pid):
+        """
+        Get the window handle for the first top-level window associated with
+        the given process ID (pid).
+        """
+        hwnds = []
+
+        def callback(hwnd, hwnds):
+            if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
+                try:
+                    window_pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+                except:
+                    # Ignore windows that don't have a process ID (e.g. the desktop window)
+                    return
+                if window_pid == pid:
+                    hwnds.append(hwnd)
+
+        win32gui.EnumWindows(callback, hwnds)
+        return hwnds[0] if hwnds else None
+
+    @classmethod
+    def get_by_id(cls, process_id: int) -> "Process":
+        """Finds a process by id and returns a Process object."""
+        try:
+            handle = win32api.OpenProcess(win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ,
+                                          True, process_id)
+            hwnd = cls.get_window_by_pid(process_id)
+            for base_address in win32process.EnumProcessModules(handle):
+                # Get the name of the module
+                current_name = str(win32process.GetModuleFileNameEx(handle, base_address))
+                return cls(process_id, current_name, "", base_address, hwnd)
+        except:
+            Exception(f" Process with id: {process_id} could not be found.")
 
     # image stuff
     def get_window_size(self) -> (int, int):

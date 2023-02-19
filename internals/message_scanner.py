@@ -63,16 +63,12 @@ class MessageScanner:
         self.read_and_save_message(current_message_address)
 
     def get_cached_message_counter(self) -> int:
-        counter_pointer, _ = self.process.read_memory(self.process.base_address + self.settings.chat_base_address,
-                                                      self.process.base_address +
-                                                      self.settings.message_cache_counter_offsets)
-        _, counter = self.process.read_memory(counter_pointer, None)
-        return counter
+        return self.process.read_memory(self.process.base_address + self.settings.chat_base_address +
+                                        self.settings.message_cache_counter_offsets[0], None)[1]
 
     def get_current_message_address(self, cached_message_counter):
         return self.process.read_memory(self.process.base_address + self.settings.chat_base_address,
                                         [(cached_message_counter - 1) * 0x4] +
-                                        self.process.base_address +
                                         self.settings.message_content_offsets)[0]
 
     def get_next_message_address(self) -> int:

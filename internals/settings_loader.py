@@ -7,17 +7,11 @@ from typing import List
 class Settings:
     def __init__(self, disc):
         self.fishing_base_address: int = disc["fishing_base_address"]
+        self.fish_is_caught_base_address: int = disc["fish_is_caught_base_address"]
         self.pole_is_thrown_offsets: List[int] = disc["pole_is_thrown_offsets"]
         self.fish_is_caught_offsets: List[int] = disc["fish_is_caught_offsets"]
-        self.chat_base_address: int = disc["chat_base_address"]
-        self.message_content_offsets: List[int] = disc["message_content_offsets"]
-        self.message_cache_counter_offsets: List[int] = disc["message_content_offsets"]
-        self.message_cache_size: int = disc["message_cache_size"]
-        self.next_message_base_address: int = disc["next_message_base_address"]
-        self.next_message_offsets: List[int] = disc["next_message_offsets"]
-        self.captcha_window_base_address: int = disc["captcha_window_base_address"]
-        self.captcha_window_offsets: List[int] = disc["captcha_window_offsets"]
-        self.captcha_image_size: tuple = tuple(disc["captcha_image_size"])
+        self.message_base_address: int = disc["message_base_address"]
+        self.message_offsets: List[int] = disc["message_offsets"]
 
 
 def _decode(o):

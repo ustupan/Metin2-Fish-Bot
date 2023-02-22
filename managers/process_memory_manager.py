@@ -9,9 +9,20 @@ import win32api
 import win32con
 import win32gui
 import win32process
-from PIL import Image, ImageGrab
+
 
 from managers.loop_manager import Manager
+
+
+def _prepare_lparam(message, vk):
+    l_param = win32api.MapVirtualKey(vk, 0) << 16
+
+    if message is win32con.WM_KEYDOWN:
+        l_param |= 0x00000000
+    else:
+        l_param |= 0x50000001
+
+    return l_param
 
 
 class Process:
@@ -169,29 +180,17 @@ class Process:
 
                 # get the virtual key code
                 vk = self.char2key(_keys[0])
-
                 if 'ctrl' in _keys:
                     vk = 0x200 | vk
                 win32api.SendMessage(self.window_handle, win32con.WM_KEYDOWN, vk,
-                                     self._prepare_lparam(win32con.WM_KEYDOWN, vk))
+                                     _prepare_lparam(win32con.WM_KEYDOWN, vk))
                 time.sleep(sleep_between_presses)
                 win32api.PostMessage(self.window_handle, win32con.WM_KEYUP, vk,
-                                     self._prepare_lparam(win32con.WM_KEYUP, vk))
-                self.focus_back_to_last_window()
-            time.sleep(sleep_between_keys)
+                                     _prepare_lparam(win32con.WM_KEYUP, vk))
 
+            time.sleep(sleep_between_keys)
         if focus_back is True:
             self.focus_back_to_last_window()
-
-    def _prepare_lparam(self, message, vk):
-        l_param = win32api.MapVirtualKey(vk, 0) << 16
-
-        if message is win32con.WM_KEYDOWN:
-            l_param |= 0x00000000
-        else:
-            l_param |= 0x50000001
-
-        return l_param
 
     @classmethod
     def get_by_name(cls, process_name: str, window_name: str) -> "Process":
@@ -269,32 +268,6 @@ class Process:
 
     def client_to_window_coords(self, client_coord_x: int, client_coord_y: int) -> (int, int):
         return win32gui.ClientToScreen(self.window_handle, (int(client_coord_x), int(client_coord_y)))
-
-    def screenshot_captcha(self, captcha_image_size_x, captcha_image_size_y) -> Image:
-        # we can use this if we switch to working in background
-        # https://stackoverflow.com/questions/53551676/python-screenshot-of-background-inactive-window
-
-        # get window size eg. 1280x768
-        window_size_x, window_size_y = self.get_window_size()
-
-        # calculate the captcha coords according to client
-        captcha_top_left_coords = (
-            (window_size_x / 2) - (captcha_image_size_x / 2),
-            (window_size_y / 2) - 22
-        )
-        captcha_bottom_right_coords = (
-            captcha_top_left_coords[0] + captcha_image_size_x,
-            captcha_top_left_coords[1] + captcha_image_size_y
-        )
-
-        # convert them to actual screen cords
-        captcha_top_left_coords = self.client_to_window_coords(*captcha_top_left_coords)
-        captcha_bottom_right_coords = self.client_to_window_coords(*captcha_bottom_right_coords)
-
-        # take screenshot
-        image = ImageGrab.grab(captcha_top_left_coords + captcha_bottom_right_coords, all_screens=True)
-
-        return image
 
     def __del__(self):
         """Close the handle when our object gets garbage collected."""

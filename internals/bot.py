@@ -33,11 +33,7 @@ class Bot:
         self.announced_pole_status = False
 
     def bot_loop(self):
-        # this method contains the main logic
-        if self.metin2.captcha_is_on():
-            return self.captcha_detected()
-
-        elif not self.metin2.pole_is_thrown():
+        if not self.metin2.pole_is_thrown():
             return self.pole_is_not_thrown()
 
         elif self.metin2.caught_fish() is True:
@@ -50,11 +46,6 @@ class Bot:
         script = Manager(self.bot_loop, sub_tasks=[self.message_scanner.message_scan_loop])
         script.start()
         self.message_scanner.message_scan_loop()
-
-    @staticmethod
-    def captcha_detected():
-        logging.info("Captcha detected... Please solve it as I don't have the ability to do so, yet.")
-        return time.sleep(5.0)
 
     def pole_is_not_thrown(self):
         logging.info("Throwing the pole...")

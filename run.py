@@ -9,6 +9,5 @@ def main():
                         level=logging.INFO, stream=sys.stdout)
     Bot().start()
 
-
 if __name__ == "__main__":
     main()

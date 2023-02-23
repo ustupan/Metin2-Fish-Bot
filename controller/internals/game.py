@@ -1,10 +1,10 @@
-from internals.settings_loader import Settings
-from managers.process_memory_manager import Process
+from controller.managers.settings_loader import Settings
+from controller.managers.process_memory_manager import Process
 
 
 class Game:
     def __init__(self, memory_settings: Settings):
-        self.process = Process.get_by_id(18044)
+        self.process = Process.get_by_id(3136)
         self.settings = memory_settings
 
     def caught_fish(self) -> bool:

@@ -1,11 +1,11 @@
 import logging
 import time
 
-from internals.game import Game
-from internals.message_scanner import MessageScanner
-from internals.settings_loader import SettingsLoader
-from managers.loop_manager import Manager
-from internals.fish import Fish
+from controller.internals.game import Game
+from controller.internals.message_scanner import MessageScanner
+from controller.managers.operations_manager import OperationsManager
+from controller.managers.settings_loader import Settings
+from controller.internals.fish import Fish
 
 INPUT_KWARGS = {
     'send_to_process': False,
@@ -23,14 +23,15 @@ INPUT_KWARGS = {
 
 
 class Bot:
-    def __init__(self):
-        self.settingsLoader = SettingsLoader()
-        self.settingsLoader.load()
-        self.metin2 = Game(self.settingsLoader.settings)
-        self.message_scanner = MessageScanner(self.metin2.process, self.settingsLoader.settings)
-
+    def __init__(self, settings: Settings):
+        self.settings = settings
         self.throw_attempts = 0
         self.announced_pole_status = False
+        self.metin2 = Game(self.settings)
+        self.message_scanner = MessageScanner(self.metin2.process, self.settings)
+
+    def message_scanner_loop(self):
+        self.message_scanner.message_scan_loop()
 
     def bot_loop(self):
         if not self.metin2.pole_is_thrown():
@@ -41,11 +42,6 @@ class Bot:
 
         else:
             return self.pole_is_thrown()
-
-    def start(self):
-        script = Manager(self.bot_loop, sub_tasks=[self.message_scanner.message_scan_loop])
-        script.start()
-        self.message_scanner.message_scan_loop()
 
     def pole_is_not_thrown(self):
         logging.info("Throwing the pole...")
@@ -71,7 +67,7 @@ class Bot:
         logging.info(f"Caught a(n) {fish.name}!")
 
         # sleep
-        Manager.human_sleep(fish.get_timing_to_catch() - 0.05, interval=0.05)
+        OperationsManager.human_sleep(fish.get_timing_to_catch() - 0.05, interval=0.05)
 
         # pull the pole, then get in and get off the horse to cancel the animation
         self.metin2.process.send_input('1', 'ctrl+g', 'ctrl+g', **INPUT_KWARGS)

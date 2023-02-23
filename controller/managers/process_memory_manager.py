@@ -10,8 +10,7 @@ import win32con
 import win32gui
 import win32process
 
-
-from managers.loop_manager import Manager
+from controller.managers.operations_manager import OperationsManager
 
 
 def _prepare_lparam(message, vk):
@@ -104,7 +103,7 @@ class Process:
             for _ in range(2):
                 try:
                     # SetForegroundWindow doesn't work without sending an alt key first
-                    Manager.press_and_release('alt', sleep_between=0, precise=True)
+                    OperationsManager.press_and_release('alt', sleep_between=0, precise=True)
 
                     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-attachthreadinput
                     win32process.AttachThreadInput(self.__last_window_thread_id, self.thread_id, True)
@@ -125,7 +124,7 @@ class Process:
         """Focuses back to the last window that was active before focusing on our process."""
         if self.__last_window_handle != self.window_handle:
             # SetForegroundWindow doesn't work without sending 'alt' first
-            Manager.press_and_release('alt', sleep_between=0)
+            OperationsManager.press_and_release('alt', sleep_between=0)
 
             win32process.AttachThreadInput(self.__last_window_thread_id, self.thread_id, False)
             try:
@@ -173,7 +172,7 @@ class Process:
 
         for key in keys:
             if send_to_process is False:
-                Manager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
+                OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
             else:
                 # split combination
                 _keys = key.split('+')

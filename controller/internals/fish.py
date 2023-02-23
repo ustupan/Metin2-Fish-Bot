@@ -75,7 +75,7 @@ class Fish:
 
 # read fish data
 AllFish: List[Fish] = []
-with open("internals/fishing.csv", 'r', encoding='utf-8-sig') as file:
+with open("controller/internals/fishing.csv", 'r', encoding='utf-8-sig') as file:
     reader = csv.DictReader(file, delimiter=';')
     for _row in reader:
         AllFish.append(Fish(_row))

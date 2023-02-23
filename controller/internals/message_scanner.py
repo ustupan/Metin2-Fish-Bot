@@ -1,7 +1,6 @@
-import logging
 from typing import List
 
-from internals.settings_loader import Settings
+from controller.managers.settings_loader import Settings
 
 POLISH_CHAR_MAPPING = dict([(185, 'ą'), (191, 'ż'), (234, 'ę'), (156, "ś"), (230, "ć"), (163, "Ł"), (179, "ł")])
 

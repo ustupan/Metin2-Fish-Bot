@@ -40,6 +40,6 @@ class SettingsLoader:
         self.settings = None
 
     def load(self):
-        with open(resource_path('../settings/memory_settings.json'), 'r') as f:
+        with open(resource_path('../../settings/memory_settings.json'), 'r') as f:
             settings_disc = json.load(f, object_hook=_decode)
             self.settings = Settings(settings_disc)

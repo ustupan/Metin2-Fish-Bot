@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from controller.managers.settings_loader import Settings
+from controller.managers.settings_manager import Settings
 
 POLISH_CHAR_MAPPING = dict([(185, 'ą'), (191, 'ż'), (234, 'ę'), (156, "ś"), (230, "ć"), (163, "Ł"), (179, "ł")])
 
@@ -15,16 +15,17 @@ class Message:
 
 
 class MessageScanner:
-    def __init__(self, process, memory_settings: Settings):
+    def __init__(self, process, settings: Settings, end_of_content_char: chr = ""):
         self.process = process
-        self.settings = memory_settings
+        self.settings = settings
         self.messages: List[Message] = list()
         self.next_message_address = 0xFFFFFFFF
+        self.end_of_content_char = end_of_content_char
 
     def message_scan_loop(self):
         logging.debug('Starting')
         self.next_message_address = self.get_message_address()
-        msg = self.read_message_at_address(self.next_message_address)
+        msg = self.read_message_at_address(self.next_message_address, self.end_of_content_char)
         if self.messages and self.messages[-1] == msg:
             return
         self.messages.append(msg)
@@ -35,7 +36,7 @@ class MessageScanner:
                                                            self.settings.message_offsets)
         return _
 
-    def read_message_at_address(self, address: int) -> Message:
+    def read_message_at_address(self, address: int, end_of_content_char: chr = "") -> Message:
         message = ""
         read_bytes = 0
         while True:
@@ -45,7 +46,7 @@ class MessageScanner:
             else:
                 char = chr(char_as_int)
             if char == '\x00':
-                content = message.split(".", 1)[0]
+                content = message.split(end_of_content_char, 1)[0]
                 return Message(content=content)
 
             message += char

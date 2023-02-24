@@ -1,8 +1,9 @@
 import logging
 from typing import Dict
 
-from controller.internals.bot import Bot
-from controller.managers.settings_loader import SettingsLoader
+from controller.managers.process_memory_manager import Process
+from controller.modules.fishbot.bot import Bot
+from controller.managers.settings_manager import SettingsManager
 from controller.managers.threading_manager import ThreadingManager, CallableGroup
 from view.app import App
 
@@ -15,38 +16,47 @@ def offsets_to_hex_string(offsets):
     return '[{}]'.format(','.join(str(i) for i in [hex(x) for x in offsets]))
 
 
+def displayed_process_name_to_id(process_name: str):
+    _, process_id_str = process_name.strip().split('|')
+    process_id = int(process_id_str.strip())
+    return process_id
+
+
 class AppController:
     def __init__(self):
-        self.settingsLoader = SettingsLoader()
-        self.view = App(self.settingsLoader.settings,
+        self.settingsManager = SettingsManager()
+        self.process = Process(None, None, None, None, None)
+        self.view = App(Process.get_process_list(),
+                        self.settingsManager.settings,
                         self.pause_or_resume,
                         self.exit,
                         self.load_settings,
                         self.load_settings_from_file)
-        self.bot = Bot(self.settingsLoader.settings)
+        self.bot = Bot(self.process, self.settingsManager.settings)
         self.threadingManager = ThreadingManager()
 
     def load_settings_from_file(self, path):
-        self.settingsLoader.load(path)  # run it on button click
-        self.view.fishing_base_entry.insert(0, hex(self.settingsLoader.settings.fishing_base_address))
-        self.view.fish_caught_base_entry.insert(0, hex(self.settingsLoader.settings.fish_is_caught_base_address))
+        self.settingsManager.load(path)  # run it on button click
+        self.view.fishing_base_entry.insert(0, hex(self.settingsManager.settings.fishing_base_address))
+        self.view.fish_caught_base_entry.insert(0, hex(self.settingsManager.settings.fish_is_caught_base_address))
         self.view.fishing_pole_thrown_offsets_entry.insert(0, offsets_to_hex_string(
-            self.settingsLoader.settings.pole_is_thrown_offsets))
+            self.settingsManager.settings.pole_is_thrown_offsets))
         self.view.fishing_caught_offsets_entry.insert(0, offsets_to_hex_string(
-            self.settingsLoader.settings.fish_is_caught_offsets))
-        self.view.message_base_entry.insert(0, hex(self.settingsLoader.settings.message_base_address))
+            self.settingsManager.settings.fish_is_caught_offsets))
+        self.view.message_base_entry.insert(0, hex(self.settingsManager.settings.message_base_address))
         self.view.message_offsets_entry.insert(0, offsets_to_hex_string(
-            self.settingsLoader.settings.message_offsets))
+            self.settingsManager.settings.message_offsets))
 
     def load_settings(self):
-        self.settingsLoader.settings.fishing_base_address = int(self.view.fishing_base_entry.get(), 16)
-        self.settingsLoader.settings.fish_is_caught_base_address = int(self.view.fish_caught_base_entry.get(), 16)
-        self.settingsLoader.settings.pole_is_thrown_offsets = \
+        self.process = self.process.copy(Process.get_by_id(displayed_process_name_to_id(self.view.scaling_option_menu.get())))
+        self.settingsManager.settings.fishing_base_address = int(self.view.fishing_base_entry.get(), 16)
+        self.settingsManager.settings.fish_is_caught_base_address = int(self.view.fish_caught_base_entry.get(), 16)
+        self.settingsManager.settings.pole_is_thrown_offsets = \
             string_to_int_list(self.view.fishing_pole_thrown_offsets_entry.get())
-        self.settingsLoader.settings.fish_is_caught_offsets = \
+        self.settingsManager.settings.fish_is_caught_offsets = \
             string_to_int_list(self.view.fishing_caught_offsets_entry.get())
-        self.settingsLoader.settings.message_base_address = int(self.view.message_base_entry.get(), 16)
-        self.settingsLoader.settings.message_offsets = string_to_int_list(self.view.message_offsets_entry.get())
+        self.settingsManager.settings.message_base_address = int(self.view.message_base_entry.get(), 16)
+        self.settingsManager.settings.message_offsets = string_to_int_list(self.view.message_offsets_entry.get())
 
     def pause_or_resume(self):
 
@@ -66,8 +76,7 @@ class AppController:
 
     def start(self):
         callable_groups: Dict[str, CallableGroup] = {
-            "fish_message": CallableGroup(tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop])}
+            "fish_and_message": CallableGroup(tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop])}
         self.threadingManager.callable_groups = callable_groups
         self.threadingManager.main_func = self.view.mainloop
         self.threadingManager.start()
-

@@ -43,12 +43,12 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-class SettingsLoader:
+class SettingsManager:
 
     def __init__(self):
         self.settings: Settings = Settings()
 
-    # todo run it on click
+    # Todo add path
     def load(self, path):
         with open(resource_path('../../settings/memory_settings.json'), 'r') as f:
             settings_disc = json.load(f, object_hook=_decode)

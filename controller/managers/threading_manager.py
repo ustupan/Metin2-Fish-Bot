@@ -6,7 +6,7 @@ from typing import List, Dict
 # sometimes I want to do other stuff independently e.g. drop the unwanted fish during fishing
 # also sometimes I want to stop fishing during doing other stuff
 # CallableGroup groups these operations e.g. to walk and buy bait I want to pause fishing and
-# start walking and buying the bait operation
+# start walking and buying the bait
 class CallableGroup:
     def __init__(self, tasks: List[callable]):
         self.pause = Event()

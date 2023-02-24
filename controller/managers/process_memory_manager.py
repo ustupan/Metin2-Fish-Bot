@@ -1,6 +1,7 @@
 import ctypes
 import functools
 import logging
+import os
 import time
 from typing import List
 
@@ -34,6 +35,15 @@ class Process:
         self.hwnd = hwnd
         self.__last_window_handle = None
         self.__last_window_thread_id = None
+
+    def copy(self, process):
+        self.process_id = process.process_id
+        self.process_name = process.process_name
+        self.base_address = process.base_address
+        self.window_name = process.window_name
+        self.hwnd = process.hwnd
+        self.__last_window_handle = process.__last_window_handle
+        self.__last_window_thread_id = process.__last_window_thread_id
 
     @functools.cached_property
     def process_handle(self):
@@ -259,6 +269,28 @@ class Process:
                 return cls(process_id, current_name, "", base_address, hwnd)
         except:
             Exception(f" Process with id: {process_id} could not be found.")
+
+    @staticmethod
+    def get_process_list():
+        process_list = []
+        process_ids = win32process.EnumProcesses()
+
+        for process_id in process_ids:
+            try:
+                handle = win32api.OpenProcess(win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ,
+                                              True, process_id)
+                hwnd = Process.get_window_by_pid(process_id)
+                if hwnd is None:
+                    continue
+                exe_name = win32process.GetModuleFileNameEx(handle, 0)
+                if "Windows" in exe_name:
+                    continue
+                exe_name = os.path.basename(win32process.GetModuleFileNameEx(handle, 0))
+                process_list.append(f"{exe_name} | {process_id}")
+            except:
+                Exception(f" Process with id: {process_id} could not be found.")
+
+        return process_list
 
     # image stuff
     def get_window_size(self) -> (int, int):

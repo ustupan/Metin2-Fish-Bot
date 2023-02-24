@@ -1,8 +1,9 @@
-from tkinter import filedialog
+from tkinter import filedialog, ttk
+from typing import List
 
 import customtkinter
 
-from controller.managers.settings_loader import Settings
+from controller.managers.settings_manager import Settings
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -10,12 +11,14 @@ customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "gr
 
 class App(customtkinter.CTk):
 
-    def __init__(self, settings: Settings, pause_or_resume: callable, close_window: callable, load_settings: callable,
+    def __init__(self, processes: List[str], settings: Settings, pause_or_resume: callable, close_window: callable,
+                 load_settings: callable,
                  load_from_file: callable):
         super().__init__()
 
         self.protocol("WM_DELETE_WINDOW", self.on_close_window)
         self.settings = settings
+        self.processes = processes
         self.pause_or_resume = pause_or_resume
         self.close_window = close_window
         self.load_settings = load_settings
@@ -51,11 +54,9 @@ class App(customtkinter.CTk):
         self.select_process_label = customtkinter.CTkLabel(self.main_config_frame, text="Metin2 process:",
                                                            font=customtkinter.CTkFont(size=15, weight="bold"))
         self.select_process_label.grid(row=0, column=0, padx=20, pady=(10, 0))
+
         self.scaling_option_menu = customtkinter.CTkOptionMenu(self.main_config_frame, width=200,
-                                                               values=["metin2client.exe | 1352",
-                                                                       "svchost.exe | 15524",
-                                                                       "metin2client.exe | 15724",
-                                                                       "python.exe | 19552"])
+                                                               values=self.processes, dynamic_resizing=False)
         self.scaling_option_menu.grid(row=1, column=0, padx=20, pady=(0, 10))
 
         self.load_from_file_button = customtkinter.CTkButton(self.main_config_frame, border_width=0,
@@ -114,8 +115,6 @@ class App(customtkinter.CTk):
     def open_file_explorer(self):
         file_path = filedialog.askopenfilename()
         self.load_from_file(file_path)
-        # do something with the selected file path, such as displaying it in a label
-        # file_label.config(text=file_path)
 
     def on_load_settings(self):
         self.load_settings()

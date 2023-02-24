@@ -4,7 +4,7 @@ from controller.managers.process_memory_manager import Process
 
 class Game:
     def __init__(self, memory_settings: Settings):
-        self.process = Process.get_by_id(3136)
+        self.process = Process.get_by_id(8848)
         self.settings = memory_settings
 
     def caught_fish(self) -> bool:
@@ -20,7 +20,6 @@ class Game:
                                                                   self.settings.fishing_base_address,
                                                                   self.settings.pole_is_thrown_offsets)
         _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
-
         return pole_in_water_timer != int('0xFFFFFFFF', 16)
 
     def send_input(self, *args, **kwargs):

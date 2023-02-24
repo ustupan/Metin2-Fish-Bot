@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from controller.managers.settings_loader import Settings
@@ -21,6 +22,7 @@ class MessageScanner:
         self.next_message_address = 0xFFFFFFFF
 
     def message_scan_loop(self):
+        logging.debug('Starting')
         self.next_message_address = self.get_message_address()
         msg = self.read_message_at_address(self.next_message_address)
         if self.messages and self.messages[-1] == msg:

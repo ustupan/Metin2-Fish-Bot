@@ -14,6 +14,7 @@ INPUT_KWARGS = {
     'sleep_between_keys': 0.06
 }
 
+
 # INPUT_KWARGS = {
 #     'send_to_process'      : True,
 #     'focus'                : False,
@@ -37,13 +38,17 @@ class Bot:
         if not self.metin2.pole_is_thrown():
             return self.pole_is_not_thrown()
 
-        elif self.metin2.caught_fish() is True:
+        if self.metin2.caught_fish() is True:
             return self.fish_is_caught()
 
         else:
             return self.pole_is_thrown()
 
     def pole_is_not_thrown(self):
+        time.sleep(0.05)
+        if self.metin2.caught_fish() is True:  # sometimes pole_is_not_thrown is triggered faster than caught_fish
+            return self.fish_is_caught()
+
         logging.info("Throwing the pole...")
         self.metin2.process.send_input('2', '1', **INPUT_KWARGS)
         # inspect attempt counter

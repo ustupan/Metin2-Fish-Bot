@@ -50,6 +50,6 @@ class SettingsManager:
 
     # Todo add path
     def load(self, path):
-        with open(resource_path('../../settings/memory_settings.json'), 'r') as f:
+        with open(resource_path(path), 'r') as f:
             settings_disc = json.load(f, object_hook=_decode)
             self.settings = self.settings.load(settings_disc)

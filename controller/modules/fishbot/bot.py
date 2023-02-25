@@ -27,7 +27,7 @@ class Bot:
     def __init__(self, process: Process, settings: Settings):
         self.process = process
         self.settings = settings
-        self.message_scanner = MessageScanner(self.process, self.settings)
+        self.message_scanner = MessageScanner(self.process, self.settings, ".")
         self.throw_attempts = 0
         self.announced_pole_status = False
 

@@ -1,8 +1,10 @@
+import tkinter
 from tkinter import filedialog, ttk
 from typing import List
 
 import customtkinter
 
+from controller.internal.logging.view_logger import ViewLogger
 from controller.managers.settings_manager import Settings
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -11,15 +13,19 @@ customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "gr
 
 class App(customtkinter.CTk):
 
-    def __init__(self, processes: List[str], settings: Settings, pause_or_resume: callable, close_window: callable,
+    def __init__(self, view_logger: ViewLogger, processes: List[str], settings: Settings,
+                 pause_or_resume: callable,
+                 cancel_animation: callable,
+                 close_window: callable,
                  load_settings: callable,
                  load_from_file: callable):
         super().__init__()
-
+        self.view_logger = view_logger
         self.protocol("WM_DELETE_WINDOW", self.on_close_window)
         self.settings = settings
         self.processes = processes
         self.pause_or_resume = pause_or_resume
+        self.cancel_animation = cancel_animation
         self.close_window = close_window
         self.load_settings = load_settings
         self.load_from_file = load_from_file
@@ -35,18 +41,21 @@ class App(customtkinter.CTk):
                                               font=customtkinter.CTkFont(size=15, weight="bold"),
                                               command=self.run_pause_callback)
         self.switch.grid(row=1, column=0, padx=10, pady=(10, 10))
+        self.switch.configure(state=tkinter.DISABLED)
 
         # create tabview
         self.tabview = customtkinter.CTkTabview(self)
         self.tabview.grid(row=2, column=0, padx=(20, 20), pady=(0, 0), sticky="nsew")
         self.tabview.add("Configuration")
         self.tabview.add("Options")
+        self.tabview.configure("Options", width=680)
+        self.tabview.add("Logs")
         self.tabview.tab("Configuration").grid_columnconfigure(2, weight=1)
         self.tabview.tab("Configuration").grid_rowconfigure(0, weight=1)
         self.tabview.tab("Options").grid_columnconfigure(0, weight=1)
+        self.tabview.tab("Logs").grid_columnconfigure(0, weight=1)
 
-        self.main_config_frame = customtkinter.CTkFrame(self.tabview.tab("Configuration"), height=150,
-                                                        fg_color="transparent")
+        self.main_config_frame = customtkinter.CTkFrame(self.tabview.tab("Configuration"), fg_color="transparent")
         self.main_config_frame.grid(row=0, column=0, padx=(0, 20), sticky="nsew")
         self.main_config_frame.grid_columnconfigure(4, weight=1)
         self.main_config_frame.grid_rowconfigure(4, weight=1)
@@ -109,8 +118,23 @@ class App(customtkinter.CTk):
         self.message_offsets_entry = customtkinter.CTkEntry(self.chat_next_address_frame, border_width=1,
                                                             placeholder_text="Message offsets", height=15)
         self.message_offsets_entry.grid(row=2, column=0, padx=20, pady=(0, 10))
-        self.label_tab_2 = customtkinter.CTkLabel(self.tabview.tab("Options"), text="CTkLabel on Tab 2")
-        self.label_tab_2.grid(row=0, column=0, padx=20, pady=(0, 10))
+
+        # self.logging_frame = customtkinter.CTkFrame(self.tabview.tab("Logs"), width=640, fg_color="transparent")
+        # self.logging_frame.grid(row=0, column=0, padx=(0, 20), sticky="nsew")
+
+        self.logs_box = customtkinter.CTkTextbox(self.tabview.tab("Logs"), width=660, height=250)
+        self.logs_box.grid(row=0, column=1, padx=(0, 0), sticky="nsew")
+        self.logs_box.configure(state='disabled')
+
+        self.main_options_frame = customtkinter.CTkFrame(self.tabview.tab("Options"), width=640, fg_color="transparent")
+        self.main_options_frame.grid(row=0, column=0, padx=(0, 20), sticky="nsew")
+        self.main_options_frame.grid_columnconfigure(4, weight=1)
+        self.main_options_frame.grid_rowconfigure(4, weight=1)
+
+        self.cancel_animation_switch = customtkinter.CTkSwitch(self.main_options_frame, text=f"Cancel animations",
+                                              font=customtkinter.CTkFont(size=12),
+                                              command=self.cancel_animations_callback)
+        self.cancel_animation_switch.grid(row=0, column=0, padx=10, pady=(10, 10))
 
     def open_file_explorer(self):
         file_path = filedialog.askopenfilename()
@@ -125,3 +149,6 @@ class App(customtkinter.CTk):
 
     def run_pause_callback(self):
         self.pause_or_resume()
+
+    def cancel_animations_callback(self):
+        self.cancel_animation()

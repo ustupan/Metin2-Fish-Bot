@@ -1,6 +1,7 @@
 import logging
 import time
 
+from controller.internal.logging.view_logger import ViewLogger
 from controller.modules.message_scanner.message_scanner import MessageScanner
 from controller.managers.operations_manager import OperationsManager
 from controller.managers.process_memory_manager import Process
@@ -24,12 +25,14 @@ INPUT_KWARGS = {
 
 
 class Bot:
-    def __init__(self, process: Process, settings: Settings):
+    def __init__(self, process: Process, settings: Settings, logger: ViewLogger):
+        self.logger = logger
         self.process = process
         self.settings = settings
         self.message_scanner = MessageScanner(self.process, self.settings, ".")
         self.throw_attempts = 0
         self.announced_pole_status = False
+        self.cancelAnimations = False
 
     def bot_loop(self):
         if not self.pole_is_thrown():
@@ -45,11 +48,14 @@ class Bot:
         time.sleep(0.05)
         if self.caught_fish() is True:  # sometimes pole_is_not_thrown is triggered faster than caught_fish
             return self.on_fish_is_caught()
-
+        self.logger.update_logs("Throwing the pole...")
         logging.info("Throwing the pole...")
         self.process.send_input('2', '1', **INPUT_KWARGS)
         # inspect attempt counter
         if self.throw_attempts > 15:
+            self.logger.update_logs("Too many attempts have been made to "
+                                    "throw the pole but none of them were successful. "
+                                    "Restart the bot!")
             raise Exception(
                 "Too many attempts have been made to throw the pole but none of them were successful.")
 
@@ -65,15 +71,18 @@ class Bot:
         except IndexError:
             fish = Fish.get_by_name('Unknown Fish')
 
+        self.logger.update_logs(f"Caught a(n) {fish.name}!")
         # announce
         logging.info(f"Caught a(n) {fish.name}!")
 
         # sleep
         OperationsManager.human_sleep(fish.get_timing_to_catch() - 0.05, interval=0.05)
 
-        # pull the pole, then get in and get off the horse to cancel the animation
-        self.process.send_input('1', 'ctrl+g', 'ctrl+g', **INPUT_KWARGS)
-
+        if self.cancelAnimations:
+            # pull the pole, then get in and get off the horse to cancel the animation
+            self.process.send_input('1', 'ctrl+g', 'ctrl+g', **INPUT_KWARGS)
+        else:
+            self.process.send_input('1', **INPUT_KWARGS)
         # reset counters
         self.throw_attempts = 0
         self.announced_pole_status = False
@@ -81,6 +90,7 @@ class Bot:
 
     def on_pole_is_thrown(self):
         if self.announced_pole_status is False:
+            self.logger.update_logs(f"Thrown the pole. Waiting to catch a fish...")
             logging.info(f"Thrown the pole. Waiting to catch a fish...")
             self.announced_pole_status = True
 

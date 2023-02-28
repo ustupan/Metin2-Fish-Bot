@@ -78,4 +78,5 @@ class ThreadingManager:
             thread.join()
 
         if self.thread_exception:
+            self._exit = True
             raise self.thread_exception

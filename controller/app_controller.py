@@ -1,10 +1,13 @@
 import logging
+import tkinter
 from typing import Dict
 
+from controller.internal.logging.view_logger import ViewLogger
 from controller.managers.process_memory_manager import Process
 from controller.modules.fishbot.bot import Bot
 from controller.managers.settings_manager import SettingsManager
 from controller.managers.threading_manager import ThreadingManager, CallableGroup
+from controller.internal.view_validators.settings_validator import SettingsValidator
 from view.app import App
 
 
@@ -24,15 +27,19 @@ def displayed_process_name_to_id(process_name: str):
 
 class AppController:
     def __init__(self):
+        self.view_logger = ViewLogger(self.update_logs_box)
         self.settingsManager = SettingsManager()
         self.process = Process(None, None, None, None, None)
-        self.view = App(Process.get_process_list(),
+        self.view = App(
+                        self.view_logger,
+                        Process.get_process_list(),
                         self.settingsManager.settings,
                         self.pause_or_resume,
+                        self.cancel_animation,
                         self.exit,
                         self.load_settings,
                         self.load_settings_from_file)
-        self.bot = Bot(self.process, self.settingsManager.settings)
+        self.bot = Bot(self.process, self.settingsManager.settings, self.view_logger)
         self.threadingManager = ThreadingManager()
 
     def load_settings_from_file(self, path):
@@ -48,15 +55,25 @@ class AppController:
             self.settingsManager.settings.message_offsets))
 
     def load_settings(self):
-        self.process = self.process.copy(Process.get_by_id(displayed_process_name_to_id(self.view.scaling_option_menu.get())))
-        self.settingsManager.settings.fishing_base_address = int(self.view.fishing_base_entry.get(), 16)
-        self.settingsManager.settings.fish_is_caught_base_address = int(self.view.fish_caught_base_entry.get(), 16)
-        self.settingsManager.settings.pole_is_thrown_offsets = \
-            string_to_int_list(self.view.fishing_pole_thrown_offsets_entry.get())
-        self.settingsManager.settings.fish_is_caught_offsets = \
-            string_to_int_list(self.view.fishing_caught_offsets_entry.get())
-        self.settingsManager.settings.message_base_address = int(self.view.message_base_entry.get(), 16)
-        self.settingsManager.settings.message_offsets = string_to_int_list(self.view.message_offsets_entry.get())
+        if SettingsValidator.validateViewSettings(self.view):
+            self.process = self.process.copy(Process.get_by_id(displayed_process_name_to_id(self.view.scaling_option_menu.get())))
+            self.settingsManager.settings.fishing_base_address = int(self.view.fishing_base_entry.get(), 16)
+            self.settingsManager.settings.fish_is_caught_base_address = int(self.view.fish_caught_base_entry.get(), 16)
+            self.settingsManager.settings.pole_is_thrown_offsets = \
+                string_to_int_list(self.view.fishing_pole_thrown_offsets_entry.get())
+            self.settingsManager.settings.fish_is_caught_offsets = \
+                string_to_int_list(self.view.fishing_caught_offsets_entry.get())
+            self.settingsManager.settings.message_base_address = int(self.view.message_base_entry.get(), 16)
+            self.settingsManager.settings.message_offsets = string_to_int_list(self.view.message_offsets_entry.get())
+            self.view.switch.configure(state=tkinter.NORMAL)
+        else:
+            self.view.switch.configure(state=tkinter.DISABLED)
+
+    def update_logs_box(self, value_to_set):
+        self.view.logs_box.configure(state='normal')
+        self.view.logs_box.insert("0.0", value_to_set)
+        self.view.logs_box.configure(state='disabled')
+        return
 
     def pause_or_resume(self):
 
@@ -66,6 +83,12 @@ class AppController:
         else:
             logging.info("Resuming...")
             self.threadingManager.system_pause.set()
+
+    def cancel_animation(self):
+        if self.bot.cancelAnimations is True:
+            self.bot.cancelAnimations = False
+        else:
+            self.bot.cancelAnimations = True
 
     def exit(self):
         logging.info("Exiting...")

@@ -44,6 +44,7 @@ class Process:
         self.hwnd = process.hwnd
         self.__last_window_handle = process.__last_window_handle
         self.__last_window_thread_id = process.__last_window_thread_id
+        return self
 
     @functools.cached_property
     def process_handle(self):

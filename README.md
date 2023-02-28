@@ -1,9 +1,39 @@
-# Mt2 Classic Fishing Bot
+# Fishbot
 
-Was made for Mt2 Classic server. It reads the game's memory to understand whether a fish is caught or not. 
-If you also use the item which shows the name of the caught fish, 
-it will use the best possible time to pull the pole (data is extracted from game's source code).
+**This project was build for educational and learning purposes only to refresh knowledge of python language.**  
+The project is an extension of https://github.com/Midorina/Metin2-Fish-Bot 
 
-I was in the process of making a captcha solver, 
-by generating millions of captcha images and feeding it into a convolutional neural network, 
-but then stopped playing the game.
+### GUI
+![Configuration tab](https://i.postimg.cc/5ysZPfSQ/1.png)
+
+
+### Installation
+
+ 1. Clone repository and enter the directory
+`git clone https://github.com/ustupan/Metin2-Fish-Bot.git`
+`cd Metin2-Fish-Bot`
+ 2. Install libraries
+ `python -m pip install -r requirements.txt`
+ 3. Run the code
+ `python run.py`
+
+### Settings
+In order to detect fishes modify 
+
+> /settings/fishing.csv
+
+to contain fishes names in your language.
+
+
+### Pointers Configuration
+
+How to find those configuration addresses pointers and offsets? 
+Depending on the launcher client and server, the search method may differ.
+I was searching for it using this strategies
+
+
+|                Action                          |Method of searching                         |
+|-----------------------------------------------|-----------------------------|
+|Pole is thrown|When the float is not in the water, the value of the variable is 0xFFFFFFFF, when it is submerged, it increases every second             |
+|Fish is caught|When an image with a fish appears, the variable is set to 1, otherwise 0            |
+|New message|The variable takes the value of the last chat message|

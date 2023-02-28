@@ -1,6 +1,7 @@
 import ctypes
 import functools
 import logging
+import os
 import time
 from typing import List
 
@@ -9,21 +10,41 @@ import win32api
 import win32con
 import win32gui
 import win32process
-from PIL import Image, ImageGrab
 
-from managers.loop_manager import Manager
+from controller.managers.operations_manager import OperationsManager
+
+
+def _prepare_lparam(message, vk):
+    l_param = win32api.MapVirtualKey(vk, 0) << 16
+
+    if message is win32con.WM_KEYDOWN:
+        l_param |= 0x00000000
+    else:
+        l_param |= 0x50000001
+
+    return l_param
 
 
 class Process:
-    def __init__(self, process_id: int, process_name: str, window_name: str, base_address):
+    def __init__(self, process_id: int, process_name: str, window_name: str, base_address, hwnd: int):
         self.process_id = process_id
         self.process_name = process_name
 
         self.base_address = base_address
         self.window_name = window_name
-
+        self.hwnd = hwnd
         self.__last_window_handle = None
         self.__last_window_thread_id = None
+
+    def copy(self, process):
+        self.process_id = process.process_id
+        self.process_name = process.process_name
+        self.base_address = process.base_address
+        self.window_name = process.window_name
+        self.hwnd = process.hwnd
+        self.__last_window_handle = process.__last_window_handle
+        self.__last_window_thread_id = process.__last_window_thread_id
+        return self
 
     @functools.cached_property
     def process_handle(self):
@@ -35,6 +56,8 @@ class Process:
     @functools.cached_property
     def window_handle(self):
         """To focus, and send inputs"""
+        if self.hwnd is not None:
+            return self.hwnd
         return win32gui.FindWindow(None, self.window_name)
 
     @functools.cached_property
@@ -91,7 +114,7 @@ class Process:
             for _ in range(2):
                 try:
                     # SetForegroundWindow doesn't work without sending an alt key first
-                    Manager.press_and_release('alt', sleep_between=0, precise=True)
+                    OperationsManager.press_and_release('alt', sleep_between=0, precise=True)
 
                     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-attachthreadinput
                     win32process.AttachThreadInput(self.__last_window_thread_id, self.thread_id, True)
@@ -112,7 +135,7 @@ class Process:
         """Focuses back to the last window that was active before focusing on our process."""
         if self.__last_window_handle != self.window_handle:
             # SetForegroundWindow doesn't work without sending 'alt' first
-            Manager.press_and_release('alt', sleep_between=0)
+            OperationsManager.press_and_release('alt', sleep_between=0)
 
             win32process.AttachThreadInput(self.__last_window_thread_id, self.thread_id, False)
             try:
@@ -160,37 +183,24 @@ class Process:
 
         for key in keys:
             if send_to_process is False:
-                Manager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
+                OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
             else:
                 # split combination
                 _keys = key.split('+')
 
                 # get the virtual key code
                 vk = self.char2key(_keys[0])
-
                 if 'ctrl' in _keys:
                     vk = 0x200 | vk
-
                 win32api.SendMessage(self.window_handle, win32con.WM_KEYDOWN, vk,
-                                     self._prepare_lparam(win32con.WM_KEYDOWN, vk))
+                                     _prepare_lparam(win32con.WM_KEYDOWN, vk))
                 time.sleep(sleep_between_presses)
                 win32api.PostMessage(self.window_handle, win32con.WM_KEYUP, vk,
-                                     self._prepare_lparam(win32con.WM_KEYUP, vk))
+                                     _prepare_lparam(win32con.WM_KEYUP, vk))
 
             time.sleep(sleep_between_keys)
-
         if focus_back is True:
             self.focus_back_to_last_window()
-
-    def _prepare_lparam(self, message, vk):
-        l_param = win32api.MapVirtualKey(vk, 0) << 16
-
-        if message is win32con.WM_KEYDOWN:
-            l_param |= 0x00000000
-        else:
-            l_param |= 0x50000001
-
-        return l_param
 
     @classmethod
     def get_by_name(cls, process_name: str, window_name: str) -> "Process":
@@ -226,6 +236,63 @@ class Process:
 
         raise Exception(f"{process_name} could not be found.")
 
+    @staticmethod
+    def get_window_by_pid(pid):
+        """
+        Get the window handle for the first top-level window associated with
+        the given process ID (pid).
+        """
+        hwnds = []
+
+        def callback(hwnd, hwnds):
+            if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
+                try:
+                    window_pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+                except:
+                    # Ignore windows that don't have a process ID (e.g. the desktop window)
+                    return
+                if window_pid == pid:
+                    hwnds.append(hwnd)
+
+        win32gui.EnumWindows(callback, hwnds)
+        return hwnds[0] if hwnds else None
+
+    @classmethod
+    def get_by_id(cls, process_id: int) -> "Process":
+        """Finds a process by id and returns a Process object."""
+        try:
+            handle = win32api.OpenProcess(win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ,
+                                          True, process_id)
+            hwnd = cls.get_window_by_pid(process_id)
+            for base_address in win32process.EnumProcessModules(handle):
+                # Get the name of the module
+                current_name = str(win32process.GetModuleFileNameEx(handle, base_address))
+                return cls(process_id, current_name, "", base_address, hwnd)
+        except:
+            Exception(f" Process with id: {process_id} could not be found.")
+
+    @staticmethod
+    def get_process_list():
+        process_list = []
+        process_ids = win32process.EnumProcesses()
+
+        for process_id in process_ids:
+            try:
+                handle = win32api.OpenProcess(win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ,
+                                              True, process_id)
+                hwnd = Process.get_window_by_pid(process_id)
+                if hwnd is None:
+                    continue
+                exe_name = win32process.GetModuleFileNameEx(handle, 0)
+                if "Windows" in exe_name:
+                    continue
+                exe_name = os.path.basename(win32process.GetModuleFileNameEx(handle, 0))
+                process_list.append(f"{exe_name} | {process_id}")
+            except:
+                Exception(f" Process with id: {process_id} could not be found.")
+
+        return process_list
+
     # image stuff
     def get_window_size(self) -> (int, int):
         rect = win32gui.GetClientRect(self.window_handle)
@@ -233,32 +300,6 @@ class Process:
 
     def client_to_window_coords(self, client_coord_x: int, client_coord_y: int) -> (int, int):
         return win32gui.ClientToScreen(self.window_handle, (int(client_coord_x), int(client_coord_y)))
-
-    def screenshot_captcha(self, captcha_image_size_x, captcha_image_size_y) -> Image:
-        # we can use this if we switch to working in background
-        # https://stackoverflow.com/questions/53551676/python-screenshot-of-background-inactive-window
-
-        # get window size eg. 1280x768
-        window_size_x, window_size_y = self.get_window_size()
-
-        # calculate the captcha coords according to client
-        captcha_top_left_coords = (
-            (window_size_x / 2) - (captcha_image_size_x / 2),
-            (window_size_y / 2) - 22
-        )
-        captcha_bottom_right_coords = (
-            captcha_top_left_coords[0] + captcha_image_size_x,
-            captcha_top_left_coords[1] + captcha_image_size_y
-        )
-
-        # convert them to actual screen cords
-        captcha_top_left_coords = self.client_to_window_coords(*captcha_top_left_coords)
-        captcha_bottom_right_coords = self.client_to_window_coords(*captcha_bottom_right_coords)
-
-        # take screenshot
-        image = ImageGrab.grab(captcha_top_left_coords + captcha_bottom_right_coords, all_screens=True)
-
-        return image
 
     def __del__(self):
         """Close the handle when our object gets garbage collected."""

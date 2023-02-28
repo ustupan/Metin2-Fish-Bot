@@ -4,10 +4,8 @@
 The project is an extension of https://github.com/Midorina/Metin2-Fish-Bot 
 
 ### GUI
+![Configuration tab](https://i.postimg.cc/5ysZPfSQ/1.png)
 
-![Configuration tab](https://postimg.cc/hQ7yvWwK)
-![Options tab](https://postimg.cc/N9xTxNHR)
-![Logs tab](https://postimg.cc/2L6q7Cmf)
 
 ### Installation
 

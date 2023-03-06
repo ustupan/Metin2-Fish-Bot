@@ -12,6 +12,7 @@ class SettingsValidator:
     @staticmethod
     def validateViewSettings(view: App):
         settings_are_valid = []
+        settings_are_valid.append(SettingsValidator.noValidate(view.bait_keys_entry))
         settings_are_valid.append(SettingsValidator.validateEntryInt(view.fishing_base_entry))
         settings_are_valid.append(SettingsValidator.validateEntryInt(view.fish_caught_base_entry))
         settings_are_valid.append(settings_are_valid and SettingsValidator.
@@ -20,7 +21,14 @@ class SettingsValidator:
                                   validateEntryIntList(view.fishing_caught_offsets_entry))
         settings_are_valid.append(SettingsValidator.validateEntryInt(view.message_base_entry))
         settings_are_valid.append(SettingsValidator.validateEntryIntList(view.message_offsets_entry))
+        settings_are_valid.append(SettingsValidator.validateEntryInt(view.sitting_on_horse_base_entry))
+        settings_are_valid.append(SettingsValidator.validateEntryIntList(view.sitting_on_horse_offset_entry))
         return all(settings_are_valid)
+
+    @staticmethod
+    def noValidate(entry: CTkEntry):
+        entry.configure(border_color="green")
+        return True
 
     @staticmethod
     def validateEntryInt(entry: CTkEntry):

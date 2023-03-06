@@ -16,9 +16,9 @@ class Message:
 
 class MessageScanner:
     def __init__(self, process, settings: Settings, end_of_content_char: chr = ""):
+        self.last_message: Message = Message("none")
         self.process = process
         self.settings = settings
-        self.messages: List[Message] = list()
         self.next_message_address = 0xFFFFFFFF
         self.end_of_content_char = end_of_content_char
 
@@ -26,9 +26,7 @@ class MessageScanner:
         logging.debug('Starting')
         self.next_message_address = self.get_message_address()
         msg = self.read_message_at_address(self.next_message_address, self.end_of_content_char)
-        if self.messages and self.messages[-1] == msg:
-            return
-        self.messages.append(msg)
+        self.last_message = msg
 
     def get_message_address(self) -> int:
         _, next_message_address = self.process.read_memory(self.process.base_address +

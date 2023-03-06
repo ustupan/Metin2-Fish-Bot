@@ -1,6 +1,8 @@
 from threading import Event, Thread
 from typing import List, Dict
 
+from controller.internal.exception.combined_exception import CombinedException
+
 
 # Sometimes there are connected operations e.g. Fishing and Message Scanning,
 # sometimes I want to do other stuff independently e.g. drop the unwanted fish during fishing
@@ -22,11 +24,12 @@ class CallableGroup:
 
 class ThreadingManager:
 
-    def __init__(self):
+    def __init__(self, restart_callable: callable):
         self.main_func: callable = None
+        self.restart_callable = restart_callable
         self.callable_groups: Dict[str, CallableGroup] = {}
         self._exit = False
-        self.thread_exception: Exception = None
+        self.thread_exceptions: List[Exception] = []
         self.system_pause = Event()
         self.system_pause.clear()
         self.all_threads: List[Thread] = []
@@ -38,12 +41,14 @@ class ThreadingManager:
                 self.system_pause.wait()
             if self._exit is True:
                 return
-
             try:
                 func()
             except Exception as e:
-                self.thread_exception = e
-                return
+                self.thread_exceptions.append(e)
+                self.restart_callable()
+                if len(self.thread_exceptions) > 10:
+                    return
+                self.runner_loop(group_name, func)
 
     @staticmethod
     def start_threads_in_group(thread_group: List[Thread]):
@@ -77,6 +82,6 @@ class ThreadingManager:
         for thread in self.all_threads:
             thread.join()
 
-        if self.thread_exception:
+        if self.thread_exceptions:
             self._exit = True
-            raise self.thread_exception
+            raise CombinedException(self.thread_exceptions)

@@ -89,20 +89,24 @@ class App(customtkinter.CTk):
 
         self.fishing_offset_label.grid(row=0, column=0, padx=20, pady=(10, 0))
 
+        self.bait_keys_entry = customtkinter.CTkEntry(self.fishing_address_frame, border_width=1,
+                                                      placeholder_text="Keys with fish bait", height=15)
+        self.bait_keys_entry.grid(row=1, column=0, padx=20, pady=(0, 10))
+
         self.fishing_base_entry = customtkinter.CTkEntry(self.fishing_address_frame, border_width=1,
                                                          placeholder_text="Thrown pole Address", height=10)
-        self.fishing_base_entry.grid(row=1, column=0, padx=20, pady=(0, 10))
+        self.fishing_base_entry.grid(row=2, column=0, padx=20, pady=(0, 10))
         self.fish_caught_base_entry = customtkinter.CTkEntry(self.fishing_address_frame, border_width=1,
                                                              placeholder_text="Fish caught Address", height=10)
-        self.fish_caught_base_entry.grid(row=2, column=0, padx=20, pady=(0, 10))
+        self.fish_caught_base_entry.grid(row=3, column=0, padx=20, pady=(0, 10))
         self.fishing_pole_thrown_offsets_entry = customtkinter.CTkEntry(self.fishing_address_frame, border_width=1,
                                                                         placeholder_text="Pole is thrown offsets",
                                                                         height=15)
-        self.fishing_pole_thrown_offsets_entry.grid(row=3, column=0, padx=20, pady=(0, 10))
+        self.fishing_pole_thrown_offsets_entry.grid(row=4, column=0, padx=20, pady=(0, 10))
 
         self.fishing_caught_offsets_entry = customtkinter.CTkEntry(self.fishing_address_frame, border_width=1,
                                                                    placeholder_text="Fish caught offsets", height=15)
-        self.fishing_caught_offsets_entry.grid(row=4, column=0, padx=20, pady=(0, 10))
+        self.fishing_caught_offsets_entry.grid(row=5, column=0, padx=20, pady=(0, 10))
 
         self.chat_next_address_frame = customtkinter.CTkFrame(self.tabview.tab("Configuration"), height=150,
                                                               fg_color="transparent")
@@ -119,10 +123,23 @@ class App(customtkinter.CTk):
                                                             placeholder_text="Message offsets", height=15)
         self.message_offsets_entry.grid(row=2, column=0, padx=20, pady=(0, 10))
 
-        # self.logging_frame = customtkinter.CTkFrame(self.tabview.tab("Logs"), width=640, fg_color="transparent")
-        # self.logging_frame.grid(row=0, column=0, padx=(0, 20), sticky="nsew")
+        self.sitting_on_horse_address_frame = customtkinter.CTkFrame(self.tabview.tab("Configuration"), height=150,
+                                                                     fg_color="transparent")
+        self.sitting_on_horse_address_frame.grid(row=0, column=2, padx=(0, 20), pady=(90, 0), sticky="nsew")
+        self.sitting_on_horse_address_frame.grid_columnconfigure(6, weight=1)
+        self.sitting_on_horse_address_frame.grid_rowconfigure(6, weight=1)
+        self.sitting_on_horse_offset_label = customtkinter.CTkLabel(self.sitting_on_horse_address_frame,
+                                                                    text="Sitting on horse",
+                                                                    font=customtkinter.CTkFont(size=15, weight="bold"))
+        self.sitting_on_horse_offset_label.grid(row=0, column=0, padx=20, pady=(10, 0))
+        self.sitting_on_horse_base_entry = customtkinter.CTkEntry(self.sitting_on_horse_address_frame, border_width=1,
+                                                         placeholder_text="Base Address", height=15)
+        self.sitting_on_horse_base_entry.grid(row=1, column=0, padx=20, pady=(0, 10))
+        self.sitting_on_horse_offset_entry = customtkinter.CTkEntry(self.sitting_on_horse_address_frame, border_width=1,
+                                                            placeholder_text="Sitting on horse offsets", height=15)
+        self.sitting_on_horse_offset_entry.grid(row=2, column=0, padx=20, pady=(0, 10))
 
-        self.logs_box = customtkinter.CTkTextbox(self.tabview.tab("Logs"), width=660, height=250)
+        self.logs_box = customtkinter.CTkTextbox(self.tabview.tab("Logs"), width=665, height=250)
         self.logs_box.grid(row=0, column=1, padx=(0, 0), sticky="nsew")
         self.logs_box.configure(state='disabled')
 
@@ -132,8 +149,8 @@ class App(customtkinter.CTk):
         self.main_options_frame.grid_rowconfigure(4, weight=1)
 
         self.cancel_animation_switch = customtkinter.CTkSwitch(self.main_options_frame, text=f"Cancel animations",
-                                              font=customtkinter.CTkFont(size=12),
-                                              command=self.cancel_animations_callback)
+                                                               font=customtkinter.CTkFont(size=12),
+                                                               command=self.cancel_animations_callback)
         self.cancel_animation_switch.grid(row=0, column=0, padx=10, pady=(10, 10))
 
     def open_file_explorer(self):

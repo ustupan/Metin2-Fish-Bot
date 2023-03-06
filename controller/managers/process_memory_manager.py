@@ -10,6 +10,7 @@ import win32api
 import win32con
 import win32gui
 import win32process
+import win32event
 
 from controller.managers.operations_manager import OperationsManager
 
@@ -174,33 +175,41 @@ class Process:
                    sleep_between_keys: float = 0,
                    sleep_between_presses: float = 0,
                    focus: bool = True,
-                   focus_back: bool = True,
+                   focus_back: bool = False,
                    send_to_process: bool = False):
         """Sends a key input straight to the process. This took me a lot of time, but it was worth it."""
-        if focus is True:  # focus if needed
-            self.focus()
-            time.sleep(sleep_between_presses)
 
-        for key in keys:
-            if send_to_process is False:
-                OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
-            else:
-                # split combination
-                _keys = key.split('+')
+        mutex_name = "SendInputOperationMutex"
+        mutex = win32event.CreateMutex(None, False, mutex_name)
 
-                # get the virtual key code
-                vk = self.char2key(_keys[0])
-                if 'ctrl' in _keys:
-                    vk = 0x200 | vk
-                win32api.SendMessage(self.window_handle, win32con.WM_KEYDOWN, vk,
-                                     _prepare_lparam(win32con.WM_KEYDOWN, vk))
+        try:
+            win32event.WaitForSingleObject(mutex, win32event.INFINITE)
+            if focus is True:  # focus if needed
+                self.focus()
                 time.sleep(sleep_between_presses)
-                win32api.PostMessage(self.window_handle, win32con.WM_KEYUP, vk,
-                                     _prepare_lparam(win32con.WM_KEYUP, vk))
 
-            time.sleep(sleep_between_keys)
-        if focus_back is True:
-            self.focus_back_to_last_window()
+            for key in keys:
+                if send_to_process is False:
+                    OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
+                else:
+                    # split combination
+                    _keys = key.split('+')
+
+                    # get the virtual key code
+                    vk = self.char2key(_keys[0])
+                    if 'ctrl' in _keys:
+                        vk = 0x200 | vk
+                    win32api.SendMessage(self.window_handle, win32con.WM_KEYDOWN, vk,
+                                         _prepare_lparam(win32con.WM_KEYDOWN, vk))
+                    time.sleep(sleep_between_presses)
+                    win32api.PostMessage(self.window_handle, win32con.WM_KEYUP, vk,
+                                         _prepare_lparam(win32con.WM_KEYUP, vk))
+
+                time.sleep(sleep_between_keys)
+            if focus_back is True:
+                self.focus_back_to_last_window()
+        finally:
+            win32event.ReleaseMutex(mutex)
 
     @classmethod
     def get_by_name(cls, process_name: str, window_name: str) -> "Process":

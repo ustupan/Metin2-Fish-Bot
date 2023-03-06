@@ -1,5 +1,7 @@
+import datetime
 import logging
 import time
+import random
 
 from controller.internal.logging.view_logger import ViewLogger
 from controller.modules.message_scanner.message_scanner import MessageScanner
@@ -32,7 +34,8 @@ class Bot:
         self.message_scanner = MessageScanner(self.process, self.settings, ".")
         self.throw_attempts = 0
         self.announced_pole_status = False
-        self.cancelAnimations = False
+        self.cancel_animations = False
+        self.last_time_pole_thrown = None
 
     def bot_loop(self):
         if not self.pole_is_thrown():
@@ -50,15 +53,15 @@ class Bot:
             return self.on_fish_is_caught()
         self.logger.update_logs("Throwing the pole...")
         logging.info("Throwing the pole...")
-        self.process.send_input('2', '1', **INPUT_KWARGS)
-        # inspect attempt counter
-        if self.throw_attempts > 15:
+        self.process.send_input(random.choice(self.settings.keys_with_fish_bait), '1', **INPUT_KWARGS)
+        if self.throw_attempts > 30:
             self.logger.update_logs("Too many attempts have been made to "
                                     "throw the pole but none of them were successful. "
                                     "Restart the bot!")
             raise Exception(
                 "Too many attempts have been made to throw the pole but none of them were successful.")
-
+        if self.sitting_on_horse() is True:
+            self.process.send_input('ctrl+g', **INPUT_KWARGS)
         self.announced_pole_status = False
         self.throw_attempts += 1
         return time.sleep(2.0)
@@ -67,7 +70,7 @@ class Bot:
         time.sleep(0.05)  # wait slightly so that we get the msg
         # try to get the timing from chat
         try:
-            fish = Fish.parse_chat_message_and_get_fish(self.message_scanner.messages[-1].content)
+            fish = Fish.parse_chat_message_and_get_fish(self.message_scanner.last_message.content)
         except IndexError:
             fish = Fish.get_by_name('Unknown Fish')
 
@@ -78,7 +81,7 @@ class Bot:
         # sleep
         OperationsManager.human_sleep(fish.get_timing_to_catch() - 0.05, interval=0.05)
 
-        if self.cancelAnimations:
+        if self.cancel_animations:
             # pull the pole, then get in and get off the horse to cancel the animation
             self.process.send_input('1', 'ctrl+g', 'ctrl+g', **INPUT_KWARGS)
         else:
@@ -86,9 +89,17 @@ class Bot:
         # reset counters
         self.throw_attempts = 0
         self.announced_pole_status = False
+        self.last_time_pole_thrown = None
         return time.sleep(0.05)
 
     def on_pole_is_thrown(self):
+        if self.last_time_pole_thrown is None:
+            self.last_time_pole_thrown = datetime.datetime.now()
+        curr_time = datetime.datetime.now()
+        if round((self.last_time_pole_thrown - curr_time).total_seconds()) > 40:
+            self.logger.update_logs(f"Throw the pole is stuck. Throwing the pole...")
+            logging.info(f"Thrown the pole is stuck. Throwing the pole...")
+            self.process.send_input('1', **INPUT_KWARGS)
         if self.announced_pole_status is False:
             self.logger.update_logs(f"Thrown the pole. Waiting to catch a fish...")
             logging.info(f"Thrown the pole. Waiting to catch a fish...")
@@ -110,3 +121,10 @@ class Bot:
                                                                   self.settings.pole_is_thrown_offsets)
         _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
         return pole_in_water_timer != int('0xFFFFFFFF', 16)
+
+    def sitting_on_horse(self) -> bool:
+        sitting_on_horse_pointer, _ = self.process.read_memory(self.process.base_address +
+                                                               self.settings.sitting_on_horse_base_address,
+                                                               self.settings.sitting_on_horse_offsets)
+        _, sitting_on_horse = self.process.read_memory(sitting_on_horse_pointer, None, True)
+        return sitting_on_horse == 1

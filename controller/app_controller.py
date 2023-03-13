@@ -8,7 +8,9 @@ from controller.modules.fishbot.bot import Bot
 from controller.managers.settings_manager import SettingsManager
 from controller.managers.threading_manager import ThreadingManager, CallableGroup
 from controller.internal.view_validators.settings_validator import SettingsValidator
+from controller.modules.junk_dropper.junk_dropper import JunkDropper
 from view.app import App
+import uuid
 
 
 def string_to_int_list(string):
@@ -35,6 +37,7 @@ def displayed_process_name_to_id(process_name: str):
 
 class AppController:
     def __init__(self):
+        self.app_identifier = uuid.uuid4()
         self.view_logger = ViewLogger(self.update_logs_box)
         self.settingsManager = SettingsManager()
         self.process = Process(None, None, None, None, None)
@@ -48,6 +51,16 @@ class AppController:
             self.load_settings,
             self.load_settings_from_file)
         self.bot = Bot(self.process, self.settingsManager.settings, self.view_logger)
+        self.junk_dropper = JunkDropper(['images/inventory/inv1.png', 'images/inventory/inv2.png',
+                                         'images/inventory/inv3.png', 'images/inventory/inv4.png'],
+                                        ['images/to_drop/drobne.png', 'images/to_drop/karas.png',
+                                         'images/to_drop/sum.png', 'images/to_drop/lotos.png',
+                                         'images/to_drop/pstrag.png', 'images/to_drop/wybielacz.png',
+                                         'images/to_drop/rekawica.png',
+                                         'images/to_drop/blond_farba.png', 'images/to_drop/czerw_farba.png']
+                                        , 300,
+                                        self.process, self.settingsManager.settings,
+                                        self.view_logger)
         self.threadingManager = ThreadingManager(self.restart)
 
     def load_settings_from_file(self, path):
@@ -125,7 +138,13 @@ class AppController:
 
     def start(self):
         callable_groups: Dict[str, CallableGroup] = {
-            "fish_and_message": CallableGroup(tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop])}
+            "fish_and_message": CallableGroup(tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop]),
+            "junk_dropping": CallableGroup(tasks=[self.junk_dropper.start_dropping])}
         self.threadingManager.callable_groups = callable_groups
         self.threadingManager.main_func = self.view.mainloop
         self.threadingManager.start()
+    #
+    # hdwi = Process.get_window_by_pid(488)
+    #
+    # junkda = JunkDropper(hdwi)
+    # junkda.start_dropping()

@@ -2,8 +2,12 @@ import datetime
 import logging
 import time
 import random
+from uuid import UUID
 
+import win32event
 from controller.internal.logging.view_logger import ViewLogger
+from controller.modules.junk_dropper.vision import Vision
+from controller.modules.junk_dropper.window_capture import WindowCapture
 from controller.modules.message_scanner.message_scanner import MessageScanner
 from controller.managers.operations_manager import OperationsManager
 from controller.managers.process_memory_manager import Process
@@ -27,7 +31,8 @@ INPUT_KWARGS = {
 
 
 class Bot:
-    def __init__(self, process: Process, settings: Settings, logger: ViewLogger):
+    def __init__(self, app_id: UUID,  process: Process, settings: Settings, logger: ViewLogger):
+        self.app_id = app_id
         self.logger = logger
         self.process = process
         self.settings = settings
@@ -38,14 +43,20 @@ class Bot:
         self.last_time_pole_thrown = None
 
     def bot_loop(self):
-        if not self.pole_is_thrown():
-            return self.on_pole_is_not_thrown()
+        mutex_name = self.app_id.hex
+        mutex = win32event.CreateMutex(None, False, mutex_name)
+        try:
+            win32event.WaitForSingleObject(mutex, win32event.INFINITE)
+            if not self.pole_is_thrown():
+                return self.on_pole_is_not_thrown()
 
-        if self.caught_fish() is True:
-            return self.on_fish_is_caught()
+            if self.caught_fish() is True:
+                return self.on_fish_is_caught()
 
-        else:
-            return self.on_pole_is_thrown()
+            else:
+                return self.on_pole_is_thrown()
+        finally:
+            win32event.ReleaseMutex(mutex)
 
     def on_pole_is_not_thrown(self):
         time.sleep(0.05)
@@ -53,7 +64,9 @@ class Bot:
             return self.on_fish_is_caught()
         self.logger.update_logs("Throwing the pole...")
         logging.info("Throwing the pole...")
-        self.process.send_input(random.choice(self.settings.keys_with_fish_bait), '1', **INPUT_KWARGS)
+        # self.process.send_input(random.choice(self.settings.keys_with_fish_bait), '1', **INPUT_KWARGS) # todo
+        self.put_on_the_bait("images/bait.png")
+        self.process.send_input('1', **INPUT_KWARGS) # todo
         if self.throw_attempts > 30:
             self.logger.update_logs("Too many attempts have been made to "
                                     "throw the pole but none of them were successful. "
@@ -65,6 +78,14 @@ class Bot:
         self.announced_pole_status = False
         self.throw_attempts += 1
         return time.sleep(2.0)
+
+    def put_on_the_bait(self, bait):
+        win_cap = WindowCapture(self.process.hwnd)
+        screenshot = win_cap.get_screenshot()
+        points = Vision(bait).find(screenshot, 0.8)
+        if points:
+            self.process.send_mouse_click(True, points[0][0], points[0][1], hwnd=self.process.hwnd,
+                                          start_from_center=False, button='right', instant=True)
 
     def on_fish_is_caught(self):
         time.sleep(0.05)  # wait slightly so that we get the msg

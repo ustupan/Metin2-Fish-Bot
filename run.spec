@@ -11,8 +11,9 @@ a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:/Users/pc/AppData/Local/Programs/Python/Python38/Lib/site-packages/customtkinter', 'customtkinter')],
-    hiddenimports=collect_submodules('psutil') + ['win32api', 'keyboard'],
+    datas=[('C:/Users/ustupan/PycharmProjects/Metin2-Fish-Bot/venv/Lib/site-packages/customtkinter', 'customtkinter')
+    , ('C:/Users/ustupan/lib/site-packages/keyboard', 'keyboard')],
+    hiddenimports=collect_submodules('psutil') + ['win32api', 'keyboard', 'pyautogui', 'pywinauto', 'tkinter.font', 'darkdetect'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -45,4 +46,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+     **{'onefile': True}
 )

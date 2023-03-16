@@ -50,16 +50,6 @@ class ThreadingManager:
                     return
                 self.runner_loop(group_name, func)
 
-    @staticmethod
-    def start_threads_in_group(thread_group: List[Thread]):
-        for thread in thread_group:
-            thread.start()
-
-    @staticmethod
-    def join_threads_in_group(thread_group: List[Thread]):
-        for thread in thread_group:
-            thread.join()
-
     def start(self):
         threads_groups: List[List[Thread]] = list()
         if bool(self.callable_groups):
@@ -72,8 +62,8 @@ class ThreadingManager:
                         self.all_threads.append(thread)
                 threads_groups.append(threads_group)
 
-        for threads_group in threads_groups:
-            self.start_threads_in_group(threads_group)
+        for thread in self.all_threads:
+            thread.start()
 
         # start view on the main thread
         self.main_func()

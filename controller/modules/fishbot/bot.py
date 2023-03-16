@@ -6,8 +6,8 @@ from uuid import UUID
 
 import win32event
 from controller.internal.logging.view_logger import ViewLogger
-from controller.modules.junk_dropper.vision import Vision
-from controller.modules.junk_dropper.window_capture import WindowCapture
+from controller.internal.screenshot_management.vision import Vision
+from controller.internal.screenshot_management.window_capture import WindowCapture
 from controller.modules.message_scanner.message_scanner import MessageScanner
 from controller.managers.operations_manager import OperationsManager
 from controller.managers.process_memory_manager import Process
@@ -64,9 +64,9 @@ class Bot:
             return self.on_fish_is_caught()
         self.logger.update_logs("Throwing the pole...")
         logging.info("Throwing the pole...")
-        # self.process.send_input(random.choice(self.settings.keys_with_fish_bait), '1', **INPUT_KWARGS) # todo
-        self.put_on_the_bait("images/bait.png")
-        self.process.send_input('1', **INPUT_KWARGS) # todo
+        self.process.send_input(random.choice(self.settings.keys_with_fish_bait), '1', **INPUT_KWARGS) # todo
+        # self.put_on_the_bait("images/bait.png")
+        # self.process.send_input('1', **INPUT_KWARGS) # todo
         if self.throw_attempts > 30:
             self.logger.update_logs("Too many attempts have been made to "
                                     "throw the pole but none of them were successful. "
@@ -79,13 +79,13 @@ class Bot:
         self.throw_attempts += 1
         return time.sleep(2.0)
 
-    def put_on_the_bait(self, bait):
-        win_cap = WindowCapture(self.process.hwnd)
-        screenshot = win_cap.get_screenshot()
-        points = Vision(bait).find(screenshot, 0.8)
-        if points:
-            self.process.send_mouse_click(True, points[0][0], points[0][1], hwnd=self.process.hwnd,
-                                          start_from_center=False, button='right', instant=True)
+    # def put_on_the_bait(self, bait):
+    #     win_cap = WindowCapture(self.process.hwnd)
+    #     screenshot = win_cap.get_screenshot()
+    #     points = Vision(bait).find(screenshot, 0.8)
+    #     if points:
+    #         self.process.send_mouse_click(True, points[0][0], points[0][1], hwnd=self.process.hwnd,
+    #                                       start_from_center=False, button='right', instant=True)
 
     def on_fish_is_caught(self):
         time.sleep(0.05)  # wait slightly so that we get the msg

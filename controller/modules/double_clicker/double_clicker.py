@@ -11,12 +11,10 @@ from controller.internal.screenshot_management.window_capture import WindowCaptu
 import datetime
 import time
 
-CONFIRM_DROP_CORDS = (50, 30)
 
+class DoubleClicker:
 
-class JunkDropper:
-
-    def __init__(self, app_id: UUID, inventory_paths: List, image_paths_to_be_dropper: List, delay_seconds: int,
+    def __init__(self, app_id: UUID, inventory_paths: List, image_paths_to_be_clicked: List, delay_seconds: int,
                  process: Process, settings: Settings, logger: ViewLogger):
         self.app_id = app_id
         self.seconds_to_add_to_next_planned_dropping = delay_seconds
@@ -25,16 +23,16 @@ class JunkDropper:
         self.settings = settings
         self.win_cap = None
         self.delay_seconds = delay_seconds
-        self.next_planned_dropping = datetime.datetime.now() + datetime.timedelta(seconds=30)
-        self.image_paths_to_be_dropper = image_paths_to_be_dropper
+        self.next_planned_click = datetime.datetime.now() + datetime.timedelta(seconds=10)
+        self.image_paths_to_be_clicked = image_paths_to_be_clicked
         self.inventory_paths = inventory_paths
 
-    def start_dropping(self):
+    def click(self):
         time.sleep(0.2)
-        time_diff_sec = (self.next_planned_dropping - datetime.datetime.now()).total_seconds()
+        time_diff_sec = (self.next_planned_click - datetime.datetime.now()).total_seconds()
         if time_diff_sec <= 10:
-            self.next_planned_dropping = self.next_planned_dropping + \
-                                         datetime.timedelta(seconds=self.delay_seconds)
+            self.next_planned_click = self.next_planned_click + \
+                                      datetime.timedelta(seconds=self.delay_seconds)
 
             mutex_name = self.app_id.hex
             mutex = win32event.CreateMutex(None, False, mutex_name)
@@ -45,11 +43,14 @@ class JunkDropper:
                     self.click_on_inventory(inventory)
                     self.win_cap = WindowCapture(self.process.hwnd)
                     screenshot = self.win_cap.get_screenshot((900, False), 0)
-                    for path_to_be_dropped in self.image_paths_to_be_dropper:
+                    for path_to_be_dropped in self.image_paths_to_be_clicked:
                         points = points + Vision(self.win_cap.get_screen_position).find(screenshot,
                                                                                         path_to_be_dropped, 0.8)
                     for point in points:
-                        self.single_drop_operation(point)
+                        self.single_double_click_operation(point)
+                        win32event.ReleaseMutex(mutex)
+                        self.click()
+                        return
                 self.click_on_inventory(self.inventory_paths[0])
             finally:
                 win32event.ReleaseMutex(mutex)
@@ -61,9 +62,8 @@ class JunkDropper:
         if points:
             self.process.send_mouse_click(True, points[0][0], points[0][1], hwnd=self.process.hwnd)
 
-    def single_drop_operation(self, point):
+    def single_double_click_operation(self, point):
         self.process.send_mouse_click(True, point[0], point[1], hwnd=self.process.hwnd)
-        self.process.send_mouse_click(True, point[0] - 250, point[1], hwnd=self.process.hwnd)
-        self.process.send_mouse_click(True, CONFIRM_DROP_CORDS[0], CONFIRM_DROP_CORDS[1], hwnd=self.process.hwnd,
-                                      start_from_center=True)
-        self.logger.update_logs("Dropped an junk item...")
+        time.sleep(0.03)
+        self.process.send_mouse_click(True, point[0], point[1], hwnd=self.process.hwnd)
+        self.logger.update_logs("Double Clicked an item...")

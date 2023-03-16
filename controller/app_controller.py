@@ -4,6 +4,9 @@ from typing import Dict
 
 from controller.internal.logging.view_logger import ViewLogger
 from controller.managers.process_memory_manager import Process
+from controller.modules.double_clicker.double_clicker import DoubleClicker
+from controller.modules.fish_seller.fish_sell import FishSell
+from controller.modules.fish_seller.fish_seller import FishSeller
 from controller.modules.fishbot.bot import Bot
 from controller.managers.settings_manager import SettingsManager
 from controller.managers.threading_manager import ThreadingManager, CallableGroup
@@ -50,17 +53,34 @@ class AppController:
             self.exit,
             self.load_settings,
             self.load_settings_from_file)
-        self.bot = Bot(self.process, self.settingsManager.settings, self.view_logger)
-        self.junk_dropper = JunkDropper(['images/inventory/inv1.png', 'images/inventory/inv2.png',
-                                         'images/inventory/inv3.png', 'images/inventory/inv4.png'],
+        self.bot = Bot(self.app_identifier, self.process, self.settingsManager.settings, self.view_logger)
+        self.double_clicker = DoubleClicker(self.app_identifier, ['images/inventory/inv1.png', 'images/inventory/inv2.png',
+                                                              'images/inventory/inv3.png', 'images/inventory/inv4.png'],
+                                        ['images/marmur.png']
+                                        , 630,
+                                        self.process, self.settingsManager.settings,
+                                        self.view_logger)
+        self.junk_dropper = JunkDropper(self.app_identifier, ['images/inventory/inv1.png', 'images/inventory/inv2.png',
+                                                              'images/inventory/inv3.png', 'images/inventory/inv4.png'],
                                         ['images/to_drop/drobne.png', 'images/to_drop/karas.png',
                                          'images/to_drop/sum.png', 'images/to_drop/lotos.png',
                                          'images/to_drop/pstrag.png', 'images/to_drop/wybielacz.png',
-                                         'images/to_drop/rekawica.png',
+                                         'images/to_drop/rekawica.png', 'images/to_drop/plaszcz.png',
+                                         'images/to_drop/pierscien1.png', 'images/to_drop/pierscien2.png',
+                                         'images/to_drop/czarna_farba.png', 'images/to_drop/symbol.png',
                                          'images/to_drop/blond_farba.png', 'images/to_drop/czerw_farba.png']
                                         , 300,
                                         self.process, self.settingsManager.settings,
                                         self.view_logger)
+        self.fish_sells = [FishSell('images/to_sell/amur.png', 559999999)]
+        self.fish_sells.append(FishSell('images/to_sell/mandaryna.png', 99999999))
+        self.fish_sells.append(FishSell('images/to_sell/losos.png', 119999999))
+        self.fish_sells.append(FishSell('images/to_sell/karp.png', 329999999))
+
+        self.fish_seller = FishSeller(self.app_identifier, ['images/inventory/inv1.png', 'images/inventory/inv2.png',
+                                                            'images/inventory/inv3.png', 'images/inventory/inv4.png'],
+                                      self.fish_sells, 350, 'images/free_slot.png', self.process,
+                                      self.settingsManager.settings, self.view_logger)
         self.threadingManager = ThreadingManager(self.restart)
 
     def load_settings_from_file(self, path):
@@ -108,7 +128,6 @@ class AppController:
         return
 
     def pause_or_resume(self):
-
         if self.threadingManager.system_pause.is_set() is True:
             logging.info("Pausing...")
             self.threadingManager.system_pause.clear()
@@ -138,13 +157,15 @@ class AppController:
 
     def start(self):
         callable_groups: Dict[str, CallableGroup] = {
-            "fish_and_message": CallableGroup(tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop]),
-            "junk_dropping": CallableGroup(tasks=[self.junk_dropper.start_dropping])}
+            "fish_and_message": CallableGroup(tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop, self.junk_dropper.start_dropping, self.fish_seller.start_selling]),
+            "junk_dropping": CallableGroup(tasks=[self.junk_dropper.start_dropping]),
+            "double_click": CallableGroup(tasks=[self.double_clicker.click]),
+            "fish_selling": CallableGroup(tasks=[self.fish_seller.start_selling])}
         self.threadingManager.callable_groups = callable_groups
         self.threadingManager.main_func = self.view.mainloop
         self.threadingManager.start()
     #
-    # hdwi = Process.get_window_by_pid(488)
+    # hdwi = Process.get_window_by_pid(488)1
     #
     # junkda = JunkDropper(hdwi)
     # junkda.start_dropping()

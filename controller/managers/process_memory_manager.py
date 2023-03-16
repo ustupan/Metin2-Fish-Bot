@@ -212,7 +212,7 @@ class Process:
             random_float = random.uniform(0.01, 0.05)
             if instant:
                 random_float = 0.0
-            pyautogui.moveTo(center_x - 50, center_y + 30, duration=random_float)
+            pyautogui.moveTo(center_x - x, center_y + y, duration=random_float)
             random_float = random.uniform(0.1, 0.13)
             if instant:
                 random_float = 0.0

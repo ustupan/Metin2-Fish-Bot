@@ -1,14 +1,7 @@
 import logging
 import sys
-import uuid
 
 from controller.app_controller import AppController
-from controller.internal.logging.view_logger import ViewLogger
-from controller.managers.process_memory_manager import Process
-from controller.managers.settings_manager import SettingsManager
-from controller.modules.fish_seller.fish_sell import FishSell
-from controller.modules.fish_seller.fish_seller import FishSeller
-from controller.modules.junk_dropper.junk_dropper import JunkDropper
 
 
 def main():

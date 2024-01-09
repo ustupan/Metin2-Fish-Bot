@@ -1,5 +1,5 @@
 import tkinter
-from tkinter import filedialog, ttk
+from tkinter import filedialog
 from typing import List
 
 import customtkinter
@@ -16,6 +16,8 @@ class App(customtkinter.CTk):
     def __init__(self, view_logger: ViewLogger, processes: List[str], settings: Settings,
                  pause_or_resume: callable,
                  cancel_animation: callable,
+                 drop_items: callable,
+                 sell_items: callable,
                  close_window: callable,
                  load_settings: callable,
                  load_from_file: callable):
@@ -26,6 +28,8 @@ class App(customtkinter.CTk):
         self.processes = processes
         self.pause_or_resume = pause_or_resume
         self.cancel_animation = cancel_animation
+        self.drop_items = drop_items
+        self.sell_items = sell_items
         self.close_window = close_window
         self.load_settings = load_settings
         self.load_from_file = load_from_file
@@ -152,6 +156,14 @@ class App(customtkinter.CTk):
                                                                font=customtkinter.CTkFont(size=12),
                                                                command=self.cancel_animations_callback)
         self.cancel_animation_switch.grid(row=0, column=0, padx=10, pady=(10, 10))
+        self.drop_items_switch = customtkinter.CTkSwitch(self.main_options_frame, text=f"Drop items",
+                                                         font=customtkinter.CTkFont(size=12),
+                                                         command=self.drop_items_callback)
+        self.drop_items_switch.grid(row=1, column=0, padx=(10, 50), pady=(10, 10))
+        self.sell_items_switch = customtkinter.CTkSwitch(self.main_options_frame, text=f"Sell items",
+                                                         font=customtkinter.CTkFont(size=12),
+                                                         command=self.sell_items_callback)
+        self.sell_items_switch.grid(row=2, column=0, padx=(10, 50), pady=(10, 10))
 
     def open_file_explorer(self):
         file_path = filedialog.askopenfilename()
@@ -169,3 +181,9 @@ class App(customtkinter.CTk):
 
     def cancel_animations_callback(self):
         self.cancel_animation()
+
+    def drop_items_callback(self):
+        self.drop_items()
+
+    def sell_items_callback(self):
+        self.sell_items()

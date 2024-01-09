@@ -17,10 +17,10 @@ import pyautogui as pyautogui
 import pywinauto
 import pywinauto.win32functions
 import pywinauto.win32structures
-import pywinauto.mouse
 import pywinauto.win32defines
 
 from controller.managers.operations_manager import OperationsManager
+from pywinauto import mouse
 
 
 def _prepare_lparam(message, vk):
@@ -111,40 +111,35 @@ class Process:
         return current_address, data.value
 
     def focus(self):
-        mutex_name = "FocusOperationMutex"
-        mutex = win32event.CreateMutex(None, False, mutex_name)
-        try:
-            win32event.WaitForSingleObject(mutex, win32event.INFINITE)
-            """Focuses on the process window."""
-            self.__last_window_handle = win32gui.GetForegroundWindow()
-            # https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getcurrentthreadid
-            self.__last_window_thread_id = win32api.GetCurrentThreadId()
 
-            if self.__last_window_handle != self.window_handle:
-                exc = None
+        """Focuses on the process window."""
+        self.__last_window_handle = win32gui.GetForegroundWindow()
+        # https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getcurrentthreadid
+        self.__last_window_thread_id = win32api.GetCurrentThreadId()
 
-                # try 2 times
-                for _ in range(2):
-                    try:
-                        # SetForegroundWindow doesn't work without sending an alt key first
-                        OperationsManager.press_and_release('alt', sleep_between=0, precise=True)
+        if self.__last_window_handle != self.window_handle:
+            exc = None
 
-                        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-attachthreadinput
-                        win32process.AttachThreadInput(self.__last_window_thread_id, self.thread_id, True)
-                        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setfocus
-                        win32gui.SetForegroundWindow(self.window_handle)
+            # try 2 times
+            for _ in range(2):
+                try:
+                    # SetForegroundWindow doesn't work without sending an alt key first
+                    OperationsManager.press_and_release('alt', sleep_between=0, precise=True)
 
-                    except Exception as e:
-                        # del the attribute to update it
-                        delattr(self, 'window_handle')
-                        exc = e
-                        time.sleep(0.1)
-                    else:
-                        return
+                    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-attachthreadinput
+                    win32process.AttachThreadInput(self.__last_window_thread_id, self.thread_id, True)
+                    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setfocus
+                    win32gui.SetForegroundWindow(self.window_handle)
 
-                raise exc
-        finally:
-            win32event.ReleaseMutex(mutex)
+                except Exception as e:
+                    # del the attribute to update it
+                    delattr(self, 'window_handle')
+                    exc = e
+                    time.sleep(0.1)
+                else:
+                    return
+
+            raise exc
 
     def focus_back_to_last_window(self):
         """Focuses back to the last window that was active before focusing on our process."""
@@ -187,36 +182,38 @@ class Process:
 
     def send_mouse_click(self, focus: bool = True, x=None, y=None, hwnd=None, start_from_center=False, button='left',
                          instant=False):
-        if focus is True:  # focus if needed
-            self.focus()
-        app = pywinauto.Application().connect(handle=hwnd)
-        window = app.window(handle=hwnd)
-        rect = window.rectangle()
-        # Get the top-left coordinates of the window on the screen
-        left, top = rect.left, rect.top
-        if not start_from_center:
-            # Assign some random values in case of logs
-            x = x + random.randint(10, 15)
-            y = y + random.randint(10, 15)
-            random_float = random.uniform(0.01, 0.05)
-            if instant:
-                random_float = 0.0
-            pyautogui.moveTo(x + left, y + top, duration=random_float)
-            if instant:
-                random_float = 0.0
-            random_float = random.uniform(0.1, 0.13)
-            pyautogui.click(button=button, duration=random_float)
-        else:
-            center_x = (rect.left + rect.right) // 2
-            center_y = (rect.top + rect.bottom) // 2
-            random_float = random.uniform(0.01, 0.05)
-            if instant:
-                random_float = 0.0
-            pyautogui.moveTo(center_x - x, center_y + y, duration=random_float)
-            random_float = random.uniform(0.1, 0.13)
-            if instant:
-                random_float = 0.0
-            pyautogui.click(button=button, duration=random_float)
+        mutex_name = "SendOperationMutex"
+        mutex = win32event.CreateMutex(None, False, mutex_name)
+        try:
+            win32event.WaitForSingleObject(mutex, win32event.INFINITE)
+            if focus is True:  # focus if needed
+                self.focus()
+            app = pywinauto.Application().connect(handle=hwnd)
+            window = app.window(handle=hwnd)
+            rect = window.rectangle()
+            # Get the top-left coordinates of the window on the screen
+            left, top = rect.left, rect.top
+            if not start_from_center:
+                # Assign some random values in case of logs
+                x = x + random.randint(10, 15)
+                y = y + random.randint(10, 15)
+                random_float = random.uniform(0.1, 0.15)
+                pyautogui.moveTo(x + left, y + top, duration=random_float)
+                random_float = random.uniform(0.13, 0.15)
+                pyautogui.click(button=button, duration=random_float)
+            else:
+                center_x = (rect.left + rect.right) // 2
+                center_y = (rect.top + rect.bottom) // 2
+                random_float = random.uniform(0.01, 0.05)
+                if instant:
+                    random_float = 0.0
+                pyautogui.moveTo(center_x - x, center_y + y, duration=random_float)
+                random_float = random.uniform(0.1, 0.13)
+                if instant:
+                    random_float = 0.0
+                pyautogui.click(button=button, duration=random_float)
+        finally:
+            win32event.ReleaseMutex(mutex)
 
     def send_input(self, *keys: str,
                    sleep_between_keys: float = 0,
@@ -224,32 +221,38 @@ class Process:
                    focus: bool = True,
                    focus_back: bool = False,
                    send_to_process: bool = False):
-        """Sends a key input straight to the process. This took me a lot of time, but it was worth it."""
-        if focus is True:  # focus if needed
-            self.focus()
-            time.sleep(sleep_between_presses)
-
-        for key in keys:
-            if send_to_process is False:
-                OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
-            else:
-                # split combination
-                _keys = key.split('+')
-
-                # get the virtual key code
-                vk = self.char2key(_keys[0])
-                if 'ctrl' in _keys:
-                    vk = 0x200 | vk
-                win32api.SendMessage(self.window_handle, win32con.WM_KEYDOWN, vk,
-                                     _prepare_lparam(win32con.WM_KEYDOWN, vk))
+        mutex_name = "SendOperationMutex"
+        mutex = win32event.CreateMutex(None, False, mutex_name)
+        try:
+            win32event.WaitForSingleObject(mutex, win32event.INFINITE)
+            """Sends a key input straight to the process. This took me a lot of time, but it was worth it."""
+            if focus is True:  # focus if needed
+                self.focus()
                 time.sleep(sleep_between_presses)
-                win32api.PostMessage(self.window_handle, win32con.WM_KEYUP, vk,
-                                     _prepare_lparam(win32con.WM_KEYUP, vk))
 
-            time.sleep(sleep_between_keys)
-        if focus_back is True:
-            self.focus_back_to_last_window()
+            for key in keys:
+                if send_to_process is False:
+                    OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
+                else:
+                    # split combination
+                    _keys = key.split('+')
 
+                    # get the virtual key code
+                    vk = self.char2key(_keys[0])
+                    if 'ctrl' in _keys:
+                        vk = 0x200 | vk
+                    win32api.SendMessage(self.window_handle, win32con.WM_KEYDOWN, vk,
+                                         _prepare_lparam(win32con.WM_KEYDOWN, vk))
+                    time.sleep(sleep_between_presses)
+                    win32api.PostMessage(self.window_handle, win32con.WM_KEYUP, vk,
+                                         _prepare_lparam(win32con.WM_KEYUP, vk))
+
+                time.sleep(sleep_between_keys)
+            if focus_back is True:
+                self.focus_back_to_last_window()
+        finally:
+            win32event.ReleaseMutex(mutex)
+            time.sleep(0.2)
 
     @classmethod
     def get_by_name(cls, process_name: str, window_name: str) -> "Process":
@@ -335,11 +338,12 @@ class Process:
                 exe_name = win32process.GetModuleFileNameEx(handle, 0)
                 if "Windows" in exe_name:
                     continue
+                if "metin" not in exe_name:
+                    continue
                 exe_name = os.path.basename(win32process.GetModuleFileNameEx(handle, 0))
                 process_list.append(f"{exe_name} | {process_id}")
             except:
                 Exception(f" Process with id: {process_id} could not be found.")
-
         return process_list
 
     # image stuff

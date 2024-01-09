@@ -1,0 +1,16 @@
+{
+  "sell_interval_s": 500,
+  "inventory_paths": [
+    "images/inventory/inv1.png",
+    "images/inventory/inv2.png",
+    "images/inventory/inv3.png",
+    "images/inventory/inv4.png"
+  ],
+  "fish_sells" : [
+    {
+      "path": "images/to_sell/d_karas.png",
+      "price": "429999999"
+    }
+  ]
+}
+

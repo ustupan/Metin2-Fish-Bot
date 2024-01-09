@@ -1,21 +1,15 @@
 {
-  "fishing_base_address": "0x0136D204",
-  "fish_is_caught_base_address": "0x01306090",
-  "pole_is_thrown_offsets": [
-    "0x14",
-    "0x56C"
+  "keys_with_fish_bait": [
+    "2"
   ],
-  "fish_is_caught_offsets": [
-    "0x14",
-    "0xa0",
-    "0x194",
-    "0xa04"
-  ],
-  "message_base_address": "0x013376C4",
-  "message_offsets": [
-    "0xFB0",
-    "0x1C",
-    "0x14",
-    "0x14"
+  "fishing_base_address": "0x014026D8",
+  "fish_is_caught_base_address": "0x014026D8",
+  "pole_is_thrown_offsets": ["0x30","0x0","0x1C","0x324","0x394"],
+  "fish_is_caught_offsets": ["0x30","0x0","0x1C","0x324","0x238"],
+  "message_base_address": "0x013CF468",
+  "message_offsets": ["0x284"],
+  "sitting_on_horse_base_address": "0x01450784",
+  "sitting_on_horse_offsets": [
+    "0xC"
   ]
 }

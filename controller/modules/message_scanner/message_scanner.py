@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 from controller.managers.settings_manager import Settings
+import time
 
 POLISH_CHAR_MAPPING = dict([(185, 'ą'), (191, 'ż'), (234, 'ę'), (156, "ś"), (230, "ć"), (163, "Ł"), (179, "ł")])
 
@@ -16,17 +17,19 @@ class Message:
 
 class MessageScanner:
     def __init__(self, process, settings: Settings, end_of_content_char: chr = ""):
-        self.last_message: Message = Message("none")
+        self.last_message = None
         self.process = process
         self.settings = settings
         self.next_message_address = 0xFFFFFFFF
         self.end_of_content_char = end_of_content_char
+        self.messages_content = []
 
     def message_scan_loop(self):
         logging.debug('Starting')
         self.next_message_address = self.get_message_address()
         msg = self.read_message_at_address(self.next_message_address, self.end_of_content_char)
         self.last_message = msg
+        time.sleep(0.01)
 
     def get_message_address(self) -> int:
         _, next_message_address = self.process.read_memory(self.process.base_address +

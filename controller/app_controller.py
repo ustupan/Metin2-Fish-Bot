@@ -4,8 +4,7 @@ from typing import Dict
 
 from controller.internal.logging.view_logger import ViewLogger
 from controller.managers.process_memory_manager import Process
-from controller.modules.double_clicker.double_clicker import DoubleClicker
-from controller.modules.fish_seller.fish_sell import FishSell
+from controller.modules.double_clicker.clicker import Clicker
 from controller.modules.fish_seller.fish_seller import FishSeller
 from controller.modules.fishbot.bot import Bot
 from controller.managers.settings_manager import SettingsManager
@@ -50,16 +49,19 @@ class AppController:
             self.settingsManager.settings,
             self.pause_or_resume,
             self.cancel_animation,
+            self.drop_items,
+            self.sell_items,
             self.exit,
             self.load_settings,
             self.load_settings_from_file)
         self.bot = Bot(self.app_identifier, self.process, self.settingsManager.settings, self.view_logger)
-        self.double_clicker = DoubleClicker(self.app_identifier, ['images/inventory/inv1.png', 'images/inventory/inv2.png',
-                                                              'images/inventory/inv3.png', 'images/inventory/inv4.png'],
-                                        ['images/marmur.png']
-                                        , 630,
-                                        self.process, self.settingsManager.settings,
-                                        self.view_logger)
+        self.clicker = Clicker(self.app_identifier,
+                               ['images/inventory/inv1.png', 'images/inventory/inv2.png',
+                                'images/inventory/inv3.png', 'images/inventory/inv4.png'],
+                               ['images/marmur.png']
+                               , 720,
+                               self.process, self.settingsManager.settings,
+                               self.view_logger)
         self.junk_dropper = JunkDropper(self.app_identifier, ['images/inventory/inv1.png', 'images/inventory/inv2.png',
                                                               'images/inventory/inv3.png', 'images/inventory/inv4.png'],
                                         ['images/to_drop/drobne.png', 'images/to_drop/karas.png',
@@ -69,17 +71,10 @@ class AppController:
                                          'images/to_drop/pierscien1.png', 'images/to_drop/pierscien2.png',
                                          'images/to_drop/czarna_farba.png', 'images/to_drop/symbol.png',
                                          'images/to_drop/blond_farba.png', 'images/to_drop/czerw_farba.png']
-                                        , 300,
+                                        , 2000,
                                         self.process, self.settingsManager.settings,
                                         self.view_logger)
-        self.fish_sells = [FishSell('images/to_sell/amur.png', 559999999)]
-        self.fish_sells.append(FishSell('images/to_sell/mandaryna.png', 99999999))
-        self.fish_sells.append(FishSell('images/to_sell/losos.png', 119999999))
-        self.fish_sells.append(FishSell('images/to_sell/karp.png', 329999999))
-
-        self.fish_seller = FishSeller(self.app_identifier, ['images/inventory/inv1.png', 'images/inventory/inv2.png',
-                                                            'images/inventory/inv3.png', 'images/inventory/inv4.png'],
-                                      self.fish_sells, 350, 'images/free_slot.png', self.process,
+        self.fish_seller = FishSeller(self.app_identifier, 'images/free_slot.png', self.process,
                                       self.settingsManager.settings, self.view_logger)
         self.threadingManager = ThreadingManager(self.restart)
 
@@ -141,10 +136,21 @@ class AppController:
         else:
             self.bot.cancel_animations = True
 
+    def drop_items(self):
+        if self.junk_dropper.drop_items is True:
+            self.junk_dropper.drop_items = False
+        else:
+            self.junk_dropper.drop_items = True
+
+    def sell_items(self):
+        if self.fish_seller.sell_items is True:
+            self.fish_seller.sell_items = False
+        else:
+            self.fish_seller.sell_items = True
+
     def exit(self):
         logging.info("Exiting...")
         self.threadingManager._exit = True
-
         # unlock the pause event so that the main loop can exit
         self.threadingManager.system_pause.set()
 
@@ -157,15 +163,9 @@ class AppController:
 
     def start(self):
         callable_groups: Dict[str, CallableGroup] = {
-            "fish_and_message": CallableGroup(tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop, self.junk_dropper.start_dropping, self.fish_seller.start_selling]),
-            "junk_dropping": CallableGroup(tasks=[self.junk_dropper.start_dropping]),
-            "double_click": CallableGroup(tasks=[self.double_clicker.click]),
-            "fish_selling": CallableGroup(tasks=[self.fish_seller.start_selling])}
+            "fish_and_message": CallableGroup(
+                tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop, self.junk_dropper.start_dropping,
+                       self.fish_seller.start_selling, self.clicker.click])}
         self.threadingManager.callable_groups = callable_groups
         self.threadingManager.main_func = self.view.mainloop
         self.threadingManager.start()
-    #
-    # hdwi = Process.get_window_by_pid(488)1
-    #
-    # junkda = JunkDropper(hdwi)
-    # junkda.start_dropping()

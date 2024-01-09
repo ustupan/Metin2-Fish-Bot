@@ -12,7 +12,7 @@ import datetime
 import time
 
 
-class DoubleClicker:
+class Clicker:
 
     def __init__(self, app_id: UUID, inventory_paths: List, image_paths_to_be_clicked: List, delay_seconds: int,
                  process: Process, settings: Settings, logger: ViewLogger):
@@ -34,7 +34,7 @@ class DoubleClicker:
             self.next_planned_click = self.next_planned_click + \
                                       datetime.timedelta(seconds=self.delay_seconds)
 
-            mutex_name = self.app_id.hex
+            mutex_name = "DoYourThingMutex"  # for every operation that need focus. eq. bot, item_sell
             mutex = win32event.CreateMutex(None, False, mutex_name)
             try:
                 win32event.WaitForSingleObject(mutex, win32event.INFINITE)
@@ -48,7 +48,6 @@ class DoubleClicker:
                                                                                         path_to_be_dropped, 0.8)
                     for point in points:
                         self.single_double_click_operation(point)
-                        win32event.ReleaseMutex(mutex)
                         self.click()
                         return
                 self.click_on_inventory(self.inventory_paths[0])
@@ -63,7 +62,5 @@ class DoubleClicker:
             self.process.send_mouse_click(True, points[0][0], points[0][1], hwnd=self.process.hwnd)
 
     def single_double_click_operation(self, point):
-        self.process.send_mouse_click(True, point[0], point[1], hwnd=self.process.hwnd)
-        time.sleep(0.03)
-        self.process.send_mouse_click(True, point[0], point[1], hwnd=self.process.hwnd)
+        self.process.send_mouse_click(True, point[0], point[1], hwnd=self.process.hwnd, button='right')
         self.logger.update_logs("Double Clicked an item...")

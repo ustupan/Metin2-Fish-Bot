@@ -38,10 +38,13 @@ class JunkDropper:
                 self.next_planned_dropping = self.next_planned_dropping + \
                                              datetime.timedelta(seconds=self.delay_seconds)
 
-                mutex_name = "DoYourThingMutex"  # for every operation that need focus. eq. bot, item_sell
+                mutex_name = self.app_id.hex
+                second_mutex_name = "mouseTakingMutex"
                 mutex = win32event.CreateMutex(None, False, mutex_name)
+                mutex1 = win32event.CreateMutex(None, False, second_mutex_name)
                 try:
                     win32event.WaitForSingleObject(mutex, win32event.INFINITE)
+                    win32event.WaitForSingleObject(mutex1, win32event.INFINITE)
                     for inventory in self.inventory_paths:
                         points = []
                         self.click_on_inventory(inventory)
@@ -55,6 +58,7 @@ class JunkDropper:
                     self.click_on_inventory(self.inventory_paths[0])
                 finally:
                     win32event.ReleaseMutex(mutex)
+                    win32event.ReleaseMutex(mutex1)
 
     def click_on_inventory(self, inventory_path):
         self.win_cap = WindowCapture(self.process.hwnd)

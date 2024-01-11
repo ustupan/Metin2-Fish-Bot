@@ -21,7 +21,7 @@ INPUT_KWARGS = {
 
 
 class Bot:
-    def __init__(self, app_id: UUID,  process: Process, settings: Settings, logger: ViewLogger):
+    def __init__(self, app_id: UUID, process: Process, settings: Settings, logger: ViewLogger):
         self.app_id = app_id
         self.logger = logger
         self.process = process
@@ -34,14 +34,16 @@ class Bot:
         self.last_time_pole_thrown = None
 
     def bot_loop(self):
-        mutex_name = "DoYourThingMutex"  # for every operation that need focus. eq. bot, item_sell
+        mutex_name = self.app_id.hex
         mutex = win32event.CreateMutex(None, False, mutex_name)
         try:
             win32event.WaitForSingleObject(mutex, win32event.INFINITE)
             if not self.pole_is_thrown():
                 time.sleep(0.1)
-                if not self.pole_is_thrown():
-                    return self.on_pole_is_not_thrown()
+                if not self.pole_is_thrown_invalidate():
+                    time.sleep(0.1)
+                    if not self.pole_is_thrown_invalidate2():
+                        return self.on_pole_is_not_thrown()
 
             if self.caught_fish() is True:
                 return self.on_fish_is_caught()
@@ -93,7 +95,7 @@ class Bot:
         self.throw_attempts = 0
         self.announced_pole_status = False
         self.last_time_pole_thrown = None
-        return time.sleep(1.0)
+        return time.sleep(2.4)
 
     def on_pole_is_thrown(self):
         if self.last_time_pole_thrown is None:
@@ -118,12 +120,32 @@ class Bot:
         # caught_fish_pointer, _ = self.process.read_memory(self.settings.fish_is_caught_base_address)
         _, caught_fish_value = self.process.read_memory(caught_fish_pointer, None)
 
-        return caught_fish_value == 1
+        # remove after finding address
+        caught_fish_pointer1, _ = self.process.read_memory(self.process.base_address +
+                                                           21301200,
+                                                           [456, 1048, 0, 268, 568])
+        _, caught_fish_value1 = self.process.read_memory(caught_fish_pointer1, None)
+
+        return caught_fish_value == 1 or caught_fish_value1 == 1
 
     def pole_is_thrown(self) -> bool:
         pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
                                                                   self.settings.fishing_base_address,
                                                                   self.settings.pole_is_thrown_offsets)
+        _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
+        return pole_in_water_timer != int('0xFFFFFFFF', 16)
+
+    def pole_is_thrown_invalidate(self) -> bool:  # remove after finding right address
+        pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
+                                                                  21300544,
+                                                                  [260, 0, 28, 916])
+        _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
+        return pole_in_water_timer != int('0xFFFFFFFF', 16)
+
+    def pole_is_thrown_invalidate2(self) -> bool:  # remove after finding right address
+        pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
+                                                                  21301200,
+                                                                  [456, 1048, 0, 268, 916])
         _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
         return pole_in_water_timer != int('0xFFFFFFFF', 16)
 

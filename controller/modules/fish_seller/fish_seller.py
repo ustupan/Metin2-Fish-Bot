@@ -48,7 +48,7 @@ class FishSeller:
             if time_diff_sec <= 10:
                 self.next_planned_selling = self.next_planned_selling + \
                                             datetime.timedelta(seconds=self.delay_seconds)
-                mutex_name = "DoYourThingMutex"  # for every operation that need focus. eq. bot, item_sell
+                mutex_name = self.app_id.hex
                 mutex = win32event.CreateMutex(None, False, mutex_name)
                 try:
                     win32event.WaitForSingleObject(mutex, win32event.INFINITE)

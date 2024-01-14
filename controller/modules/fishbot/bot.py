@@ -6,6 +6,7 @@ from uuid import UUID
 
 import win32event
 from controller.internal.logging.view_logger import ViewLogger
+from controller.modules.message_replier.message_replier import MessageReplier
 from controller.modules.message_scanner.message_scanner import MessageScanner
 from controller.managers.operations_manager import OperationsManager
 from controller.managers.process_memory_manager import Process
@@ -32,12 +33,23 @@ class Bot:
         self.announced_pole_status = False
         self.cancel_animations = False
         self.last_time_pole_thrown = None
+        self.last_message_from_user = None
+        self.message_replier = MessageReplier(self.app_id,
+                                              'images/wiadomosc.png',
+                                              'images/zamknij.png',
+                                              self.process, self.logger)
 
     def bot_loop(self):
         mutex_name = self.app_id.hex
         mutex = win32event.CreateMutex(None, False, mutex_name)
         try:
             win32event.WaitForSingleObject(mutex, win32event.INFINITE)
+            message = self.new_message_received()
+            if message[0]:
+                time.sleep(4)
+                self.last_message_from_user = message[1]
+                self.message_replier.reply(message[1])
+                time.sleep(10)
             if not self.pole_is_thrown():
                 time.sleep(0.1)
                 if not self.pole_is_thrown_invalidate():
@@ -127,6 +139,20 @@ class Bot:
         _, caught_fish_value1 = self.process.read_memory(caught_fish_pointer1, None)
 
         return caught_fish_value == 1 or caught_fish_value1 == 1
+
+    def new_message_received(self):
+        # message_received_pointer, _ = self.process.read_memory(self.process.base_address +
+        #                                                        21309408)21082217
+        message_received_pointer, _ = self.process.read_memory(self.process.base_address +
+                                                               21082208)
+        _, message_received_value = self.process.read_memory_string(message_received_pointer, None, string_length=60)
+
+        null_char_position = message_received_value.find('\x00')
+
+        # Truncate the string up to the first null character
+        truncated_value = message_received_value[:null_char_position]
+        return (self.last_message_from_user != truncated_value and truncated_value is not None and len(
+            truncated_value) > 2), truncated_value
 
     def pole_is_thrown(self) -> bool:
         pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +

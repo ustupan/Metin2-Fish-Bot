@@ -110,6 +110,47 @@ class Process:
         logging.debug(f"(Address: {hex(current_address)}) Value: {data.value}")
         return current_address, data.value
 
+    def read_memory_string(self, address, offsets: List = None, byte=False, string_length=60):
+        """Reads memory using a base_address and a list of offsets (optional).
+        Returns a pointer and a value as a string."""
+
+        data_type = ctypes.c_ubyte if byte else ctypes.c_char  # Use c_char for string data type
+        data_size = string_length if byte else string_length * ctypes.sizeof(data_type)
+
+        data = (data_type * data_size)()  # Create an array of data_type to store the string
+        bytes_read = ctypes.c_uint(0)  # Bytes read
+
+        current_address = address
+
+        if offsets:
+            for offset in offsets:
+                # Convert to int if it's str
+                if isinstance(offset, str):
+                    offset = int(offset, 16)
+
+                # Read the process memory
+                ctypes.windll.kernel32.ReadProcessMemory(
+                    self.process_handle, current_address, ctypes.byref(data),
+                    ctypes.sizeof(data), ctypes.byref(bytes_read)
+                )
+
+                # Replace the address with the new data address
+                current_address = data.value + offset
+        else:
+            # Just read the single memory address
+            ctypes.windll.kernel32.ReadProcessMemory(
+                self.process_handle, current_address, ctypes.byref(data),
+                ctypes.sizeof(data), ctypes.byref(bytes_read)
+            )
+
+        # Convert the array of bytes to a string
+        result_string = data.raw.decode('utf-8', errors='replace')
+
+        # Return a pointer to the value and the value as a string
+        # If current offset is `None`, return the value of the last offset
+        logging.debug(f"(Address: {hex(current_address)}) Value: {result_string}")
+        return current_address, result_string[:string_length]
+
     def focus(self):
 
         """Focuses on the process window."""

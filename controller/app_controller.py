@@ -62,8 +62,9 @@ class AppController:
                                , 720,
                                self.process, self.settingsManager.settings,
                                self.view_logger)
-        self.junk_dropper = JunkDropper(self.app_identifier, ['images/inventory/inv1.png', 'images/inventory/inv2.png',
-                                                              'images/inventory/inv3.png', 'images/inventory/inv4.png'],
+        self.junk_dropper = JunkDropper(self.app_identifier, 'images/inventory/inv1.png', 'images/inventory/inv1.png',
+                                        ['images/inventory/inv1.png', 'images/inventory/inv2.png',
+                                         'images/inventory/inv3.png', 'images/inventory/inv4.png'],
                                         ['images/to_drop/drobne.png', 'images/to_drop/karas.png',
                                          'images/to_drop/sum.png', 'images/to_drop/lotos.png',
                                          'images/to_drop/pstrag.png', 'images/to_drop/wybielacz.png',

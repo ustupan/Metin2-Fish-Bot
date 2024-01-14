@@ -48,3 +48,38 @@ class Vision:
             cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
 
         return filter_points(points)
+
+    def find2(self, screenshot, needle_img_path, threshold=0.8):
+        # Load the image we're trying to match
+        needle_img = cv.imread(needle_img_path, cv.IMREAD_UNCHANGED)
+
+        # Convert the needle image to a single-channel (grayscale) image
+        needle_gray = cv.cvtColor(needle_img, cv.COLOR_BGR2GRAY)
+
+        # Save the dimensions of the needle image
+        needle_w = needle_img.shape[1]
+        needle_h = needle_img.shape[0]
+
+        img_rgb = screenshot
+
+        # Convert the input image to a single-channel (grayscale) image
+        img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
+
+        points = []
+
+        # Ensure the depth and type match
+        needle_gray = needle_gray.astype(np.float32)  # Convert template to float32 if needed
+        img_gray = img_gray.astype(np.float32)  # Convert input image to float32 if needed
+
+        # Check the number of dimensions and assert if necessary
+        assert needle_gray.ndim <= 2 and img_gray.ndim <= 2, "Images must have at most 2 dimensions."
+
+        # Perform the template matching
+        res = cv.matchTemplate(img_gray, needle_gray, cv.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+
+        for pt in zip(*loc[::-1]):  # Switch columns and rows
+            points.append(self.transform_into_screen_pos(pt))
+            cv.rectangle(img_rgb, pt, (pt[0] + needle_w, pt[1] + needle_h), (0, 0, 255), 2)
+
+        return filter_points(points)

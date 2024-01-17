@@ -38,28 +38,23 @@ class Bot:
                                               'images/wiadomosc.png',
                                               'images/zamknij.png',
                                               self.process, self.logger)
+        self.message_replier_unpause = False
 
     def bot_loop(self):
         mutex_name = self.app_id.hex
         mutex = win32event.CreateMutex(None, False, mutex_name)
         try:
             win32event.WaitForSingleObject(mutex, win32event.INFINITE)
-            message = self.new_message_received()
-            if message[0]:
-                time.sleep(4)
-                self.last_message_from_user = message[1]
-                self.message_replier.reply(message[1])
-                time.sleep(10)
             if not self.pole_is_thrown():
                 time.sleep(0.1)
-                if not self.pole_is_thrown_invalidate():
-                    time.sleep(0.1)
-                    if not self.pole_is_thrown_invalidate2():
-                        return self.on_pole_is_not_thrown()
-
+                return self.on_pole_is_not_thrown()
             if self.caught_fish() is True:
                 return self.on_fish_is_caught()
-
+            message = self.new_message_received()
+            if message[0] and self.message_replier_unpause:
+                time.sleep(4)
+                self.last_message_from_user = message[1]
+                return self.message_replier.reply(message[1])
             else:
                 return self.on_pole_is_thrown()
         finally:
@@ -81,7 +76,7 @@ class Bot:
             self.process.send_input('ctrl+g', **INPUT_KWARGS)
         self.announced_pole_status = False
         self.throw_attempts += 1
-        return time.sleep(2.0)
+        return time.sleep(2.5)
 
     def on_fish_is_caught(self):
         time.sleep(0.05)  # wait slightly so that we get the msg
@@ -129,27 +124,23 @@ class Bot:
         caught_fish_pointer, _ = self.process.read_memory(self.process.base_address +
                                                           self.settings.fish_is_caught_base_address,
                                                           self.settings.fish_is_caught_offsets)
-        # caught_fish_pointer, _ = self.process.read_memory(self.settings.fish_is_caught_base_address)
         _, caught_fish_value = self.process.read_memory(caught_fish_pointer, None)
 
-        # remove after finding address
-        caught_fish_pointer1, _ = self.process.read_memory(self.process.base_address +
-                                                           21301200,
-                                                           [456, 1048, 0, 268, 568])
-        _, caught_fish_value1 = self.process.read_memory(caught_fish_pointer1, None)
+        # # remove after finding address
+        # caught_fish_pointer1, _ = self.process.read_memory(self.process.base_address +
+        #                                                    21301200,
+        #                                                    [456, 1048, 0, 268, 568])
+        # _, caught_fish_value1 = self.process.read_memory(caught_fish_pointer1, None)
 
-        return caught_fish_value == 1 or caught_fish_value1 == 1
+        return caught_fish_value == 1
 
     def new_message_received(self):
-        # message_received_pointer, _ = self.process.read_memory(self.process.base_address +
-        #                                                        21309408)21082217
         message_received_pointer, _ = self.process.read_memory(self.process.base_address +
-                                                               21082208)
+                                                               self.settings.chat_message_base_address)
         _, message_received_value = self.process.read_memory_string(message_received_pointer, None, string_length=60)
 
         null_char_position = message_received_value.find('\x00')
 
-        # Truncate the string up to the first null character
         truncated_value = message_received_value[:null_char_position]
         return (self.last_message_from_user != truncated_value and truncated_value is not None and len(
             truncated_value) > 2), truncated_value
@@ -159,21 +150,22 @@ class Bot:
                                                                   self.settings.fishing_base_address,
                                                                   self.settings.pole_is_thrown_offsets)
         _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
+        logging.info(pole_in_water_timer)
         return pole_in_water_timer != int('0xFFFFFFFF', 16)
 
-    def pole_is_thrown_invalidate(self) -> bool:  # remove after finding right address
-        pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
-                                                                  21300544,
-                                                                  [260, 0, 28, 916])
-        _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
-        return pole_in_water_timer != int('0xFFFFFFFF', 16)
-
-    def pole_is_thrown_invalidate2(self) -> bool:  # remove after finding right address
-        pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
-                                                                  21301200,
-                                                                  [456, 1048, 0, 268, 916])
-        _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
-        return pole_in_water_timer != int('0xFFFFFFFF', 16)
+    # def pole_is_thrown_invalidate(self) -> bool:  # remove after finding right address
+    #     pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
+    #                                                               21300544,
+    #                                                               [260, 0, 28, 916])
+    #     _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
+    #     return pole_in_water_timer != int('0xFFFFFFFF', 16)
+    #
+    # def pole_is_thrown_invalidate2(self) -> bool:  # remove after finding right address
+    #     pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
+    #                                                               21301200,
+    #                                                               [456, 1048, 0, 268, 916])
+    #     _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
+    #     return pole_in_water_timer != int('0xFFFFFFFF', 16)
 
     def sitting_on_horse(self) -> bool:
         sitting_on_horse_pointer, _ = self.process.read_memory(self.process.base_address +

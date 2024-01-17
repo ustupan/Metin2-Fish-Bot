@@ -273,7 +273,10 @@ class Process:
 
             for key in keys:
                 if send_to_process is False:
-                    OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
+                    if key in ["?", "!"]:
+                        OperationsManager.press_and_release("shift+" + key, sleep_between=sleep_between_presses, precise=True)
+                    else:
+                        OperationsManager.press_and_release(key, sleep_between=sleep_between_presses, precise=True)
                 else:
                     # split combination
                     _keys = key.split('+')

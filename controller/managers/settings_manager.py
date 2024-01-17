@@ -15,6 +15,7 @@ class Settings:
         self.message_offsets: List[int] = [0]
         self.sitting_on_horse_base_address: int = 0
         self.sitting_on_horse_offsets: List[int] = [0]
+        self.chat_message_base_address: int = 0
 
     def load(self, disc):
         self.keys_with_fish_bait: List[str] = disc["keys_with_fish_bait"]
@@ -26,6 +27,7 @@ class Settings:
         self.message_offsets: List[int] = disc["message_offsets"]
         self.sitting_on_horse_base_address: int = disc["sitting_on_horse_base_address"]
         self.sitting_on_horse_offsets: List[int] = disc["sitting_on_horse_offsets"]
+        self.chat_message_base_address: List[int] = disc["chat_message_base_address"]
         return self
 
 
@@ -55,7 +57,8 @@ def is_hex(string):
 
 def resource_path(relative_path):
     """ Get absolute path to resource for PyInstaller """
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    # base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    base_path = ""
     return os.path.join(base_path, relative_path)
 
 

@@ -16,7 +16,8 @@ CONFIRM_DROP_CORDS = (50, 30)
 
 class JunkDropper:
 
-    def __init__(self, app_id: UUID, bin_path, delete_items_path, inventory_paths: List, image_paths_to_be_dropper: List, delay_seconds: int,
+    def __init__(self, app_id: UUID, bin_path, delete_items_path, inventory_paths: List,
+                 image_paths_to_be_dropper: List, delay_seconds: int,
                  process: Process, settings: Settings, logger: ViewLogger):
         self.app_id = app_id
         self.seconds_to_add_to_next_planned_dropping = delay_seconds
@@ -48,6 +49,7 @@ class JunkDropper:
                     win32event.WaitForSingleObject(mutex, win32event.INFINITE)
                     win32event.WaitForSingleObject(mutex1, win32event.INFINITE)
                     self.click_on_bin(self.bin_path)
+                    all_points = []
                     for inventory in self.inventory_paths:
                         points = []
                         self.click_on_inventory(inventory)
@@ -58,8 +60,10 @@ class JunkDropper:
                                                                                             path_to_be_dropped, 0.8)
                         for point in points:
                             self.single_drop_operation(point)
-                    self.click_on_delete_items(self.delete_items_path)
-                    self.approve_drop()
+                            all_points.append(point)
+                    if len(all_points) > 0:
+                        self.click_on_delete_items(self.delete_items_path)
+                        self.approve_drop()
                     self.click_on_bin(self.bin_path)
                 finally:
                     win32event.ReleaseMutex(mutex)
@@ -75,14 +79,14 @@ class JunkDropper:
     def click_on_bin(self, bin_path):
         self.win_cap = WindowCapture(self.process.hwnd)
         screenshot = self.win_cap.get_screenshot()
-        points = Vision(self.win_cap.get_screen_position).find(screenshot, bin_path, 0.8)
+        points = Vision(self.win_cap.get_screen_position).find2(screenshot, bin_path, 0.8)
         if points:
             self.process.send_mouse_click(True, points[0][0], points[0][1], hwnd=self.process.hwnd)
 
     def click_on_delete_items(self, delete_path):
         self.win_cap = WindowCapture(self.process.hwnd)
         screenshot = self.win_cap.get_screenshot()
-        points = Vision(self.win_cap.get_screen_position).find(screenshot, delete_path, 0.8)
+        points = Vision(self.win_cap.get_screen_position).find2(screenshot, delete_path, 0.8)
         if points:
             self.process.send_mouse_click(True, points[0][0], points[0][1], hwnd=self.process.hwnd)
 

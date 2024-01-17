@@ -21,7 +21,6 @@ class OperationsManager:
             sleep = time.sleep
         else:
             sleep = OperationsManager.human_sleep
-
         sleep(sleep_before)
         keyboard.press(button)
         sleep(sleep_between)

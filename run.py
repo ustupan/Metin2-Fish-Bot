@@ -1,7 +1,6 @@
 import logging
 import sys
 
-import openai
 from controller.app_controller import AppController
 
 

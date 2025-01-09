@@ -29,7 +29,7 @@ class MessageScanner:
         self.next_message_address = self.get_message_address()
         msg = self.read_message_at_address(self.next_message_address, self.end_of_content_char)
         self.last_message = msg
-        time.sleep(0.01)
+        time.sleep(0.001)
 
     def get_message_address(self) -> int:
         _, next_message_address = self.process.read_memory(self.process.base_address +

@@ -20,7 +20,6 @@ import pywinauto.win32structures
 import pywinauto.win32defines
 
 from controller.managers.operations_manager import OperationsManager
-from pywinauto import mouse
 
 
 def _prepare_lparam(message, vk):
@@ -222,7 +221,7 @@ class Process:
         return vk_key
 
     def send_mouse_click(self, focus: bool = True, x=None, y=None, hwnd=None, start_from_center=False, button='left',
-                         instant=False):
+                         instant=False, hold=False, click=True, do_random=True, additional_zigzag=False):
         mutex_name = "SendOperationMutex"
         mutex = win32event.CreateMutex(None, False, mutex_name)
         try:
@@ -236,12 +235,26 @@ class Process:
             left, top = rect.left, rect.top
             if not start_from_center:
                 # Assign some random values in case of logs
-                x = x + random.randint(10, 15)
-                y = y + random.randint(10, 15)
-                random_float = random.uniform(0.1, 0.15)
+                if do_random:
+                    x = x + random.randint(10, 15)
+                    y = y + random.randint(10, 15)
+                random_float = random.uniform(0.1, 0.11)
                 pyautogui.moveTo(x + left, y + top, duration=random_float)
-                random_float = random.uniform(0.13, 0.15)
-                pyautogui.click(button=button, duration=random_float)
+                random_float = random.uniform(0.03, 0.7)
+                if additional_zigzag:
+                    toggle = True
+                    for _ in range(10):  # 10 kroków
+                        offset_x = 3 if toggle else -3   # Losowe przesunięcie w poziomie (od -3 do 3 pikseli)
+                        toggle = not toggle
+                        offset_y = 1  # Przesunięcie o 1 piksel w dół
+                        current_x, current_y = pyautogui.position()  # Pobierz aktualną pozycję kursora
+                        pyautogui.moveTo(current_x + offset_x, current_y + offset_y, duration=0.04)  # Przesuń zygzakiem
+                if not hold and click:
+                    pyautogui.click(button=button, duration=random_float)
+                elif not hold and not click:
+                    pyautogui.mouseUp()
+                else:
+                    pyautogui.mouseDown()
             else:
                 center_x = (rect.left + rect.right) // 2
                 center_y = (rect.top + rect.bottom) // 2
@@ -249,12 +262,28 @@ class Process:
                 if instant:
                     random_float = 0.0
                 pyautogui.moveTo(center_x - x, center_y + y, duration=random_float)
-                random_float = random.uniform(0.1, 0.13)
+                random_float = random.uniform(0.03, 0.07)
                 if instant:
                     random_float = 0.0
-                pyautogui.click(button=button, duration=random_float)
+                if not hold and click:
+                    pyautogui.click(button=button, duration=random_float)
+                elif not hold and not click:
+                    pass
+                else:
+                    pyautogui.mouseDown()
         finally:
             win32event.ReleaseMutex(mutex)
+
+    def click_and_drag(self, point, point_to_drag_to, hwnd, is_valid=False):
+        mutex_name = "DragMutex"
+        mutex = win32event.CreateMutex(None, False, mutex_name)
+        try:
+            win32event.WaitForSingleObject(mutex, win32event.INFINITE)
+            self.send_mouse_click(True, point[0], point[1], hwnd=hwnd, hold=True, do_random=False)
+            self.send_mouse_click(True, point_to_drag_to[0], point_to_drag_to[1], hwnd=hwnd, click=not is_valid, do_random=False, additional_zigzag=is_valid)
+        finally:
+            win32event.ReleaseMutex(mutex)
+            time.sleep(0.2)
 
     def send_input(self, *keys: str,
                    sleep_between_keys: float = 0,

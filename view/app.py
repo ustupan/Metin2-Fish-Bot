@@ -12,8 +12,8 @@ from controller.managers.settings_manager import Settings
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
 
-IMAGE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_images") # when its run in pycharm as proj
-# IMAGE_PATH = os.path.join("", "images/gui") #when its run as exe
+# IMAGE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_images") # when its run in pycharm as proj
+IMAGE_PATH = os.path.join("", "images/gui") #when its run as exe
 
 
 class App(customtkinter.CTk):

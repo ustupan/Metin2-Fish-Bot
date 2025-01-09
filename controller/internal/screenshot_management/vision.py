@@ -49,6 +49,7 @@ class Vision:
 
         return filter_points(points)
 
+
     def find2(self, screenshot, needle_img_path, threshold=0.8):
         # Load the image we're trying to match
         needle_img = cv.imread(needle_img_path, cv.IMREAD_UNCHANGED)

@@ -4,6 +4,7 @@ from typing import Dict
 
 from controller.internal.logging.view_logger import ViewLogger
 from controller.managers.process_memory_manager import Process
+from controller.modules.captcha_resolver.captcha_resolver import CaptchaResolver
 from controller.modules.double_clicker.clicker import Clicker
 from controller.modules.fish_seller.fish_seller import FishSeller
 from controller.modules.fishbot.bot import Bot
@@ -46,6 +47,7 @@ PATH_TO_SETTINGS = 'settings/memory_settings.json'
 class AppController:
     def __init__(self):
         self.app_identifier = uuid.uuid4()
+
         self.view_logger = ViewLogger(self.update_logs_box)
         self.settingsManager = SettingsManager()
         self.process = Process(None, None, None, None, None)
@@ -62,6 +64,7 @@ class AppController:
             self.exit,
             self.load_settings,
             self.load_settings_from_file)
+        self.view_logger.app_id = self.view.scaling_option_menu.get()
         self.bot = Bot(self.app_identifier, self.process, self.settingsManager.settings, self.view_logger)
         self.clicker = Clicker(self.app_identifier,
                                ['images/inventory/inv1.png', 'images/inventory/inv2.png',
@@ -70,7 +73,9 @@ class AppController:
                                , 720,
                                self.process, self.settingsManager.settings,
                                self.view_logger)
-        self.junk_dropper = JunkDropper(self.app_identifier, 'images/bin.png', 'images/delete_items.png',
+        self.junk_dropper = JunkDropper(self.app_identifier, 'images/bin.jpg', 'images/delete_items.jpg',
+                                        'images/bin_opened.JPG',
+                                        'images/bin.jpg',
                                         ['images/inventory/inv1.png', 'images/inventory/inv2.png',
                                          'images/inventory/inv3.png', 'images/inventory/inv4.png'],
                                         ['images/to_drop/drobne.png', 'images/to_drop/karas.png',
@@ -83,6 +88,19 @@ class AppController:
                                         , 2000,
                                         self.process, self.settingsManager.settings,
                                         self.view_logger)
+        self.captchaResolver = CaptchaResolver(self.app_identifier,
+                                               ["images/captcha/alarm.jpg", "images/captcha/bateria.jpg",
+                                                "images/captcha/kura.jpg", "images/captcha/list.jpg",
+                                                "images/captcha/piwo.jpg", "images/captcha/rozmowa_w_i.jpg",
+                                                "images/captcha/slonce.jpg", "images/captcha/tecza.jpg",
+                                                "images/captcha/telefon.jpg", "images/captcha/wysoka.jpg", "images/captcha/deser.jpg"],
+                                               ["images/captcha/alarm_label.jpg", "images/captcha/bateria_label.jpg",
+                                                "images/captcha/kura_label.jpg", "images/captcha/list_label.jpg",
+                                                "images/captcha/piwo_label.jpg", "images/captcha/rozmowa_w_i_label.jpg",
+                                                "images/captcha/slonce_label.jpg", "images/captcha/tecza_label.jpg",
+                                                "images/captcha/telefon_label.jpg", "images/captcha/wysoka_label.jpg", "images/captcha/deser_label.jpg"],
+                                               "images/captcha/captcha.JPG", "images/captcha/tu_klik.jpg", self.process,
+                                               self.view_logger)
         self.fish_seller = FishSeller(self.app_identifier, 'images/free_slot.png', self.process,
                                       self.settingsManager.settings, self.view_logger)
         self.threadingManager = ThreadingManager(self.restart)
@@ -190,7 +208,7 @@ class AppController:
         callable_groups: Dict[str, CallableGroup] = {
             "fish_and_message": CallableGroup(
                 tasks=[self.bot.bot_loop, self.bot.message_scanner.message_scan_loop, self.junk_dropper.start_dropping,
-                       self.fish_seller.start_selling, self.clicker.click])}
+                       self.fish_seller.start_selling, self.clicker.click, self.captchaResolver.detect_captcha_loop])}
         self.threadingManager.callable_groups = callable_groups
         self.threadingManager.main_func = self.view.mainloop
         self.threadingManager.start()

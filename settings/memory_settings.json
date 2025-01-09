@@ -2,14 +2,15 @@
   "keys_with_fish_bait": [
     "2","3","4","f1","f2","f3","f4"
   ],
-  "fishing_base_address": "0x013CDC50",
-  "fish_is_caught_base_address": "0x01435CCC",
-  "pole_is_thrown_offsets": ["0x2C", "0x0","0x590"],
-  "fish_is_caught_offsets": ["0x0","0x438"],
-  "message_base_address": "0x01469C3C",
-  "message_offsets": ["0x284"],
+  "fishing_base_address": "0x01453C94",
+  "fish_is_caught_base_address": "0x01453C94",
+  "pole_is_thrown_offsets": ["0x0","0x5D4"],
+  "fish_is_caught_offsets": ["0x0","0x478"],
+  "message_base_address": "0x0142D280",
+  "message_offsets": ["0x4", "0x14"],
   "sitting_on_horse_base_address": "0x01450784",
   "sitting_on_horse_offsets": [
     "0xC"
-  ],"chat_message_base_address": "0x0141B060"
+  ],"chat_message_base_address": "0x0150D850"
 }
+

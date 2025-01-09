@@ -66,11 +66,11 @@ class MessageReplier:
         return True
 
     def determine_reply(self, user_id):
-        openai.api_key = "TO_BE_FILLED"
+        openai.api_key = "TODO" # ADD API KEY
         messages = self.prepare_messages(user_id) if len(
             self.player_chat_history[user_id]) < 6 else self.end_conversation_messages()
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages
         )
         return response.choices[0].message.content.strip().lower().replace(",", "").replace(".", "")

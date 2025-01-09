@@ -2,6 +2,7 @@ from threading import Event, Thread
 from typing import List, Dict
 
 from controller.internal.exception.combined_exception import CombinedException
+from controller.internal.exception.demo_exception import DemoException
 
 
 # Sometimes there are connected operations e.g. Fishing and Message Scanning,
@@ -43,6 +44,8 @@ class ThreadingManager:
                 return
             try:
                 func()
+            except DemoException as demo_exception:
+                self._exit = True
             except Exception as e:
                 self.thread_exceptions.append(e)
                 self.restart_callable()

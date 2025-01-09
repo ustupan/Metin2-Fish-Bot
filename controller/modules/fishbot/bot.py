@@ -5,6 +5,8 @@ import random
 from uuid import UUID
 
 import win32event
+
+from controller.internal.exception.demo_exception import DemoException
 from controller.internal.logging.view_logger import ViewLogger
 from controller.modules.message_replier.message_replier import MessageReplier
 from controller.modules.message_scanner.message_scanner import MessageScanner
@@ -39,8 +41,12 @@ class Bot:
                                               'images/zamknij.png',
                                               self.process, self.logger)
         self.message_replier_unpause = False
+        self.curr_time = datetime.datetime.now()
+        self.demo_time_out = self.curr_time + datetime.timedelta(seconds=600)
 
     def bot_loop(self):
+        # if (datetime.datetime.now() > self.demo_time_out) or datetime.datetime.now() < self.curr_time:
+        #     self.demo_timeout()
         mutex_name = self.app_id.hex
         mutex = win32event.CreateMutex(None, False, mutex_name)
         try:
@@ -51,14 +57,19 @@ class Bot:
             if self.caught_fish() is True:
                 return self.on_fish_is_caught()
             message = self.new_message_received()
+            encoded_message_value = message[1].replace('\ufffd', '?')  # Replace
             if message[0] and self.message_replier_unpause:
                 time.sleep(4)
-                self.last_message_from_user = message[1]
-                return self.message_replier.reply(message[1])
+                self.last_message_from_user = encoded_message_value
+                return self.message_replier.reply(encoded_message_value)
             else:
                 return self.on_pole_is_thrown()
         finally:
             win32event.ReleaseMutex(mutex)
+
+    def demo_timeout(self):
+        self.logger.update_logs("Demo timeout - Exit the bot")
+        raise DemoException("Demo timeout - Exit the bot")
 
     def on_pole_is_not_thrown(self):
         if self.caught_fish() is True:  # sometimes pole_is_not_thrown is triggered faster than caught_fish
@@ -126,12 +137,6 @@ class Bot:
                                                           self.settings.fish_is_caught_offsets)
         _, caught_fish_value = self.process.read_memory(caught_fish_pointer, None)
 
-        # # remove after finding address
-        # caught_fish_pointer1, _ = self.process.read_memory(self.process.base_address +
-        #                                                    21301200,
-        #                                                    [456, 1048, 0, 268, 568])
-        # _, caught_fish_value1 = self.process.read_memory(caught_fish_pointer1, None)
-
         return caught_fish_value == 1
 
     def new_message_received(self):
@@ -152,20 +157,6 @@ class Bot:
         _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
         logging.info(pole_in_water_timer)
         return pole_in_water_timer != int('0xFFFFFFFF', 16)
-
-    # def pole_is_thrown_invalidate(self) -> bool:  # remove after finding right address
-    #     pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
-    #                                                               21300544,
-    #                                                               [260, 0, 28, 916])
-    #     _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
-    #     return pole_in_water_timer != int('0xFFFFFFFF', 16)
-    #
-    # def pole_is_thrown_invalidate2(self) -> bool:  # remove after finding right address
-    #     pole_in_water_timer_pointer, _ = self.process.read_memory(self.process.base_address +
-    #                                                               21301200,
-    #                                                               [456, 1048, 0, 268, 916])
-    #     _, pole_in_water_timer = self.process.read_memory(pole_in_water_timer_pointer, None)
-    #     return pole_in_water_timer != int('0xFFFFFFFF', 16)
 
     def sitting_on_horse(self) -> bool:
         sitting_on_horse_pointer, _ = self.process.read_memory(self.process.base_address +
